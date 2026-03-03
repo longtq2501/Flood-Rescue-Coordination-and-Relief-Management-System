@@ -1,0 +1,32 @@
+Table notification_events {
+  id             bigint        PK, AUTO_INCREMENT
+  event_type     varchar(100)  NOT NULL
+  target_user_id bigint        NOT NULL
+  channel        enum(SSE, WEBSOCKET, BOTH)
+  payload        json          NOT NULL
+  status         enum(PENDING, SENT, FAILED)  DEFAULT 'PENDING'
+  sent_at        datetime      NULL
+  created_at     datetime      DEFAULT CURRENT_TIMESTAMP
+
+  INDEX idx_user_status (target_user_id, status)
+  INDEX idx_created (created_at)
+}
+
+Table user_subscriptions {
+  id          bigint       PK, AUTO_INCREMENT
+  user_id     bigint       NOT NULL
+  topic       varchar(200) NOT NULL  ← ví dụ: /topic/map.tracking
+  subscribed_at datetime   DEFAULT CURRENT_TIMESTAMP
+  active      tinyint(1)   DEFAULT 1
+
+  UNIQUE (user_id, topic)
+}
+
+Table delivery_logs {
+  id                    bigint   PK, AUTO_INCREMENT
+  notification_event_id bigint   FK → notification_events.id
+  attempt_number        int      DEFAULT 1
+  status                enum(SUCCESS, FAILED)
+  error_message         text     NULL
+  attempted_at          datetime DEFAULT CURRENT_TIMESTAMP
+}

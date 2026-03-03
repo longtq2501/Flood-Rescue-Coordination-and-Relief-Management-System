@@ -1,0 +1,63 @@
+Table warehouses {
+  id         bigint       PK, AUTO_INCREMENT
+  name       varchar(100) NOT NULL
+  address    varchar(500)
+  manager_id bigint       NOT NULL  ← userId
+  created_at datetime     DEFAULT CURRENT_TIMESTAMP
+}
+
+Table relief_items {
+  id              bigint       PK, AUTO_INCREMENT
+  warehouse_id    bigint       FK → warehouses.id
+  name            varchar(200) NOT NULL
+  category        varchar(100)
+  unit            varchar(50)  NOT NULL
+  quantity        int          DEFAULT 0
+  low_threshold   int          DEFAULT 10
+  created_at      datetime     DEFAULT CURRENT_TIMESTAMP
+  updated_at      datetime     ON UPDATE CURRENT_TIMESTAMP
+
+  INDEX idx_warehouse (warehouse_id)
+  INDEX idx_quantity (quantity)
+}
+
+Table vehicles {
+  id              bigint       PK, AUTO_INCREMENT
+  plate_number    varchar(20)  UNIQUE, NOT NULL
+  type            enum(BOAT, TRUCK, HELICOPTER, AMBULANCE, OTHER)
+  capacity        int
+  status          enum(AVAILABLE, IN_USE, MAINTENANCE, OFFLINE)  DEFAULT 'AVAILABLE'
+  current_lat     decimal(10,8)
+  current_lng     decimal(11,8)
+  assigned_team   bigint       NULL  ← teamId
+  created_at      datetime     DEFAULT CURRENT_TIMESTAMP
+
+  INDEX idx_status (status)
+}
+
+Table vehicle_logs {
+  id           bigint   PK, AUTO_INCREMENT
+  vehicle_id   bigint   FK → vehicles.id
+  assignment_id bigint  NULL
+  action       enum(ASSIGNED, RELEASED, MAINTENANCE, OFFLINE)
+  note         text     NULL
+  logged_at    datetime DEFAULT CURRENT_TIMESTAMP
+}
+
+Table distributions {
+  id              bigint   PK, AUTO_INCREMENT
+  request_id      bigint   NOT NULL  ← requestId từ db_request
+  recipient_id    bigint   NOT NULL  ← userId
+  coordinator_id  bigint   NOT NULL  ← userId
+  note            text     NULL
+  distributed_at  datetime DEFAULT CURRENT_TIMESTAMP
+
+  INDEX idx_request (request_id)
+}
+
+Table distribution_items {
+  id               bigint  PK, AUTO_INCREMENT
+  distribution_id  bigint  FK → distributions.id
+  relief_item_id   bigint  FK → relief_items.id
+  quantity         int     NOT NULL
+}

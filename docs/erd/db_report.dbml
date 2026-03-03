@@ -1,0 +1,36 @@
+Table daily_request_snapshots {
+  id                 bigint  PK, AUTO_INCREMENT
+  snapshot_date      date    NOT NULL, UNIQUE
+  total_requests     int     DEFAULT 0
+  critical_count     int     DEFAULT 0
+  high_count         int     DEFAULT 0
+  medium_count       int     DEFAULT 0
+  low_count          int     DEFAULT 0
+  completed_count    int     DEFAULT 0
+  cancelled_count    int     DEFAULT 0
+  avg_response_min   decimal(8,2)  NULL  ← phút từ PENDING → ASSIGNED
+  avg_complete_min   decimal(8,2)  NULL  ← phút từ ASSIGNED → COMPLETED
+  created_at         datetime DEFAULT CURRENT_TIMESTAMP
+}
+
+Table daily_resource_snapshots {
+  id                    bigint  PK, AUTO_INCREMENT
+  snapshot_date         date    NOT NULL
+  warehouse_id          bigint  NOT NULL
+  total_distributions   int     DEFAULT 0
+  vehicles_deployed     int     DEFAULT 0
+  created_at            datetime DEFAULT CURRENT_TIMESTAMP
+
+  UNIQUE (snapshot_date, warehouse_id)
+}
+
+Table team_performance_snapshots {
+  id                  bigint  PK, AUTO_INCREMENT
+  snapshot_date       date    NOT NULL
+  team_id             bigint  NOT NULL
+  missions_completed  int     DEFAULT 0
+  avg_duration_min    decimal(8,2) NULL
+  created_at          datetime DEFAULT CURRENT_TIMESTAMP
+
+  UNIQUE (snapshot_date, team_id)
+}

@@ -1,0 +1,50 @@
+Table rescue_teams {
+  id           bigint       PK, AUTO_INCREMENT
+  name         varchar(100) NOT NULL
+  leader_id    bigint       NOT NULL  ← userId từ db_auth
+  capacity     int          DEFAULT 4
+  status       enum(AVAILABLE, BUSY, RETURNING, OFFLINE)  DEFAULT 'AVAILABLE'
+  current_lat  decimal(10,8)
+  current_lng  decimal(11,8)
+  created_at   datetime     DEFAULT CURRENT_TIMESTAMP
+
+  INDEX idx_status (status)
+}
+
+Table team_members {
+  id        bigint  PK, AUTO_INCREMENT
+  team_id   bigint  FK → rescue_teams.id
+  user_id   bigint  NOT NULL  ← userId từ db_auth
+  joined_at datetime DEFAULT CURRENT_TIMESTAMP
+
+  UNIQUE (team_id, user_id)
+}
+
+Table assignments {
+  id              bigint   PK, AUTO_INCREMENT
+  request_id      bigint   NOT NULL  ← requestId từ db_request
+  team_id         bigint   FK → rescue_teams.id
+  vehicle_id      bigint   NOT NULL  ← vehicleId từ db_resource
+  coordinator_id  bigint   NOT NULL  ← userId
+  status          enum(ACTIVE, COMPLETED, CANCELLED)  DEFAULT 'ACTIVE'
+  assigned_at     datetime DEFAULT CURRENT_TIMESTAMP
+  started_at      datetime NULL
+  completed_at    datetime NULL
+  result_note     text     NULL
+
+  INDEX idx_request (request_id)
+  INDEX idx_team (team_id)
+  INDEX idx_status (status)
+}
+
+Table location_logs {
+  id          bigint        PK, AUTO_INCREMENT
+  team_id     bigint        FK → rescue_teams.id
+  lat         decimal(10,8) NOT NULL
+  lng         decimal(11,8) NOT NULL
+  speed       decimal(5,2)  NULL
+  heading     decimal(5,2)  NULL
+  logged_at   datetime      DEFAULT CURRENT_TIMESTAMP
+
+  INDEX idx_team_time (team_id, logged_at)
+}

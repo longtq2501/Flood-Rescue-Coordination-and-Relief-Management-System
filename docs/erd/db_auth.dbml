@@ -1,0 +1,24 @@
+Table users {
+  id            bigint        [pk, increment]
+  full_name     varchar(100)  [not null]
+  phone         varchar(20)   [unique, not null]
+  email         varchar(100)  [unique]
+  password_hash varchar(255)  [not null]
+  role          varchar(20)   [not null, note: 'CITIZEN, RESCUE_TEAM, COORDINATOR, MANAGER, ADMIN']
+  status        varchar(20)   [default: 'ACTIVE', note: 'ACTIVE, INACTIVE, BANNED']
+  lat           decimal(10,8)
+  lng           decimal(11,8)
+  avatar_url    varchar(500)
+  created_at    datetime      [default: `now()`]
+  updated_at    datetime
+  deleted_at    datetime      [note: 'soft delete']
+}
+
+Table refresh_tokens {
+  id         bigint       [pk, increment]
+  user_id    bigint       [not null, ref: > users.id]
+  token      varchar(500) [not null, unique]
+  expires_at datetime     [not null]
+  revoked    tinyint(1)   [default: 0]
+  created_at datetime     [default: `now()`]
+}

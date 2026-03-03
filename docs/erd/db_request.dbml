@@ -1,0 +1,40 @@
+Table rescue_requests {
+  id              bigint        PK, AUTO_INCREMENT
+  citizen_id      bigint        NOT NULL  ← userId từ db_auth (không FK cross-schema)
+  lat             decimal(10,8) NOT NULL
+  lng             decimal(11,8) NOT NULL
+  address_text    varchar(500)           ← nhập thủ công nếu GPS lệch
+  description     text          NOT NULL
+  num_people      int           DEFAULT 1
+  urgency_level   enum(CRITICAL, HIGH, MEDIUM, LOW)  NOT NULL
+  status          enum(PENDING, VERIFIED, ASSIGNED, IN_PROGRESS, COMPLETED, CONFIRMED, CANCELLED)
+  coordinator_id  bigint        NULL  ← userId coordinator xử lý
+  verified_at     datetime      NULL
+  completed_at    datetime      NULL
+  confirmed_at    datetime      NULL
+  created_at      datetime      DEFAULT CURRENT_TIMESTAMP
+  updated_at      datetime      ON UPDATE CURRENT_TIMESTAMP
+
+  INDEX idx_status (status)
+  INDEX idx_citizen (citizen_id)
+  INDEX idx_location (lat, lng)
+  INDEX idx_urgency (urgency_level)
+  INDEX idx_created (created_at)
+}
+
+Table request_images {
+  id          bigint       PK, AUTO_INCREMENT
+  request_id  bigint       FK → rescue_requests.id
+  image_url   varchar(500) NOT NULL
+  uploaded_at datetime     DEFAULT CURRENT_TIMESTAMP
+}
+
+Table status_history {
+  id           bigint      PK, AUTO_INCREMENT
+  request_id   bigint      FK → rescue_requests.id
+  from_status  enum(...)   NULL
+  to_status    enum(...)   NOT NULL
+  changed_by   bigint      NOT NULL  ← userId
+  note         text        NULL
+  changed_at   datetime    DEFAULT CURRENT_TIMESTAMP
+}
