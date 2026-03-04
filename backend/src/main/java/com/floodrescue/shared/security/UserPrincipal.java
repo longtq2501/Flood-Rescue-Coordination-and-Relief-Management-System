@@ -1,6 +1,6 @@
 package com.floodrescue.shared.security;
 
-import com.floodrescue.module.auth.domain.entity.User;
+import com.floodrescue.module.auth.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

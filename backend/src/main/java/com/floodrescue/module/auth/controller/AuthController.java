@@ -1,7 +1,7 @@
 package com.floodrescue.module.auth.controller;
 
-import com.floodrescue.module.auth.dto.request.*;
-import com.floodrescue.module.auth.dto.response.*;
+import com.floodrescue.module.auth.dtos.request.*;
+import com.floodrescue.module.auth.dtos.response.*;
 import com.floodrescue.module.auth.service.AuthService;
 import com.floodrescue.shared.response.ApiResponse;
 import com.floodrescue.shared.security.UserPrincipal;

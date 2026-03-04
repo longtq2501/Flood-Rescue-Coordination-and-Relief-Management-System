@@ -1,6 +1,6 @@
-package com.floodrescue.module.auth.dto.request;
+package com.floodrescue.module.auth.dtos.request;
 
-import com.floodrescue.module.auth.domain.enums.RoleType;
+import com.floodrescue.module.auth.enums.RoleType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 

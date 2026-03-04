@@ -1,7 +1,7 @@
-package com.floodrescue.module.auth.domain.entity;
+package com.floodrescue.module.auth.entity;
 
-import com.floodrescue.module.auth.domain.enums.RoleType;
-import com.floodrescue.module.auth.domain.enums.UserStatus;
+import com.floodrescue.module.auth.enums.RoleType;
+import com.floodrescue.module.auth.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
 @SQLRestriction("deleted_at IS NULL")
 @Getter 
 @Setter
-@NoArgsConstructor @AllArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class User {
 
@@ -35,11 +36,11 @@ public class User {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20)")
     private RoleType role;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20)")
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 

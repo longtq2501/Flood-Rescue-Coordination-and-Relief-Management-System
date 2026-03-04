@@ -1,4 +1,4 @@
-package com.floodrescue.module.auth.dto.request;
+package com.floodrescue.module.auth.dtos.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.floodrescue.module.auth.domain.entity;
+package com.floodrescue.module.auth.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
