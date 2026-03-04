@@ -1,6 +1,6 @@
 package com.floodrescue.shared.security;
 
-import com.floodrescue.module.auth.domain.entity.User;
+import com.floodrescue.module.auth.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;

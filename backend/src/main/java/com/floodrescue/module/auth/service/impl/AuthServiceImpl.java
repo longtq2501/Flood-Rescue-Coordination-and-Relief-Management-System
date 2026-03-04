@@ -1,21 +1,24 @@
-package com.floodrescue.module.auth.service;
+package com.floodrescue.module.auth.service.impl;
 
-import com.floodrescue.module.auth.domain.entity.RefreshToken;
-import com.floodrescue.module.auth.domain.entity.User;
-import com.floodrescue.module.auth.domain.enums.RoleType;
-import com.floodrescue.module.auth.domain.enums.UserStatus;
-import com.floodrescue.module.auth.dto.request.*;
-import com.floodrescue.module.auth.dto.response.*;
+
+import com.floodrescue.module.auth.dtos.request.*;
+import com.floodrescue.module.auth.dtos.response.LoginResponse;
+import com.floodrescue.module.auth.dtos.response.UserResponse;
+import com.floodrescue.module.auth.entity.RefreshToken;
+import com.floodrescue.module.auth.entity.User;
+import com.floodrescue.module.auth.enums.RoleType;
+import com.floodrescue.module.auth.enums.UserStatus;
 import com.floodrescue.module.auth.repository.RefreshTokenRepository;
 import com.floodrescue.module.auth.repository.UserRepository;
+import com.floodrescue.module.auth.service.AuthService;
 import com.floodrescue.shared.exception.AppException;
 import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.shared.security.JwtTokenProvider;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

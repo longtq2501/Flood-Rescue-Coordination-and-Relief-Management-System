@@ -1,7 +1,7 @@
 package com.floodrescue.module.auth.service;
 
-import com.floodrescue.module.auth.dto.request.*;
-import com.floodrescue.module.auth.dto.response.*;
+import com.floodrescue.module.auth.dtos.request.*;
+import com.floodrescue.module.auth.dtos.response.*;
 
 public interface AuthService {
     UserResponse register(RegisterRequest request);

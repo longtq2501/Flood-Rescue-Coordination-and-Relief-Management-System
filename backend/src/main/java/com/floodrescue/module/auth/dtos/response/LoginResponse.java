@@ -1,4 +1,4 @@
-package com.floodrescue.module.auth.dto.response;
+package com.floodrescue.module.auth.dtos.response;
 
 import lombok.Builder;
 import lombok.Data;

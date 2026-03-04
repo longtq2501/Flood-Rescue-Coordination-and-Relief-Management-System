@@ -1,7 +1,7 @@
-package com.floodrescue.module.auth.dto.response;
+package com.floodrescue.module.auth.dtos.response;
 
-import com.floodrescue.module.auth.domain.enums.RoleType;
-import com.floodrescue.module.auth.domain.enums.UserStatus;
+import com.floodrescue.module.auth.enums.RoleType;
+import com.floodrescue.module.auth.enums.UserStatus;
 import lombok.Builder;
 import lombok.Data;
 

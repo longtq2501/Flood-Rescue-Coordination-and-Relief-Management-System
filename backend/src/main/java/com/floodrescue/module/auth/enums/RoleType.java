@@ -1,4 +1,4 @@
-package com.floodrescue.module.auth.domain.enums;
+package com.floodrescue.module.auth.enums;
 
 public enum RoleType {
     CITIZEN,
