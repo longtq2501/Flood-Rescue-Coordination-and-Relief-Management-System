@@ -1,0 +1,23 @@
+package com.floodrescue.module.resource.repository;
+
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.floodrescue.module.resource.domain.entity.ReliefItem;
+
+@Repository
+public interface ReliefItemRepository extends JpaRepository<ReliefItem, Long> {
+
+    Page<ReliefItem> findByWarehouseId(Long warehouseId, Pageable pageable);
+
+    // Tìm các item đang dưới threshold → để check sau mỗi lần distribute
+    @Query("SELECT i FROM ReliefItem i WHERE i.quantity <= i.lowThreshold")
+    List<ReliefItem> findAllBelowThreshold();
+
+    List<ReliefItem> findByWarehouseIdAndCategory(Long warehouseId, String category);
+}

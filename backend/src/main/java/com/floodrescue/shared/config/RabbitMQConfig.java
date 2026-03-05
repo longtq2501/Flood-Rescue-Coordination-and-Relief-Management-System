@@ -1,6 +1,12 @@
 package com.floodrescue.shared.config;
 
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.ExchangeBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -12,30 +18,31 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     // ==================== EXCHANGES ====================
-    public static final String EXCHANGE     = "rescue.events";
+    public static final String EXCHANGE = "rescue.events";
     public static final String DLX_EXCHANGE = "rescue.dead-letter";
 
     // ==================== ROUTING KEYS ====================
-    public static final String RK_REQUEST_CREATED   = "rescue.request.created";
-    public static final String RK_REQUEST_ASSIGNED  = "rescue.request.assigned";
+    public static final String RK_REQUEST_CREATED = "rescue.request.created";
+    public static final String RK_REQUEST_ASSIGNED = "rescue.request.assigned";
     public static final String RK_REQUEST_COMPLETED = "rescue.request.completed";
-    public static final String RK_REQUEST_STATUS    = "rescue.request.status.updated";
-    public static final String RK_RESOURCE_LOW      = "rescue.resource.stock.low";
-    public static final String RK_RESOURCE_DIST     = "rescue.resource.distributed";
-    public static final String RK_TEAM_LOCATION     = "rescue.team.location.updated";
-    public static final String RK_BROADCAST         = "rescue.system.broadcast";
+    public static final String RK_REQUEST_STATUS = "rescue.request.status.updated";
+    public static final String RK_RESOURCE_LOW = "rescue.resource.stock.low";
+    public static final String RK_RESOURCE_DIST = "rescue.resource.distributed";
+    public static final String RK_TEAM_LOCATION = "rescue.team.location.updated";
+    public static final String RK_BROADCAST = "rescue.system.broadcast";
+    public static final String RK_RESOURCE_DISTRIBUTED = "rescue.resource.distributed";
 
     // ==================== QUEUE NAMES ====================
-    public static final String Q_NOTIF_REQUEST_CREATED   = "q.notification.request.created";
-    public static final String Q_NOTIF_REQUEST_ASSIGNED  = "q.notification.request.assigned";
+    public static final String Q_NOTIF_REQUEST_CREATED = "q.notification.request.created";
+    public static final String Q_NOTIF_REQUEST_ASSIGNED = "q.notification.request.assigned";
     public static final String Q_NOTIF_REQUEST_COMPLETED = "q.notification.request.completed";
-    public static final String Q_NOTIF_REQUEST_STATUS    = "q.notification.request.status";
-    public static final String Q_NOTIF_RESOURCE_LOW      = "q.notification.resource.low";
-    public static final String Q_NOTIF_BROADCAST         = "q.notification.system.broadcast";
-    public static final String Q_REPORT_COMPLETED        = "q.report.request.completed";
-    public static final String Q_REPORT_DISTRIBUTED      = "q.report.resource.distributed";
-    public static final String Q_LOCATION                = "q.dispatch.location.updated";
-    public static final String Q_DLQ                     = "q.dlq.all";
+    public static final String Q_NOTIF_REQUEST_STATUS = "q.notification.request.status";
+    public static final String Q_NOTIF_RESOURCE_LOW = "q.notification.resource.low";
+    public static final String Q_NOTIF_BROADCAST = "q.notification.system.broadcast";
+    public static final String Q_REPORT_COMPLETED = "q.report.request.completed";
+    public static final String Q_REPORT_DISTRIBUTED = "q.report.resource.distributed";
+    public static final String Q_LOCATION = "q.dispatch.location.updated";
+    public static final String Q_DLQ = "q.dlq.all";
 
     // ==================== EXCHANGES ====================
     @Bean
@@ -63,15 +70,50 @@ public class RabbitMQConfig {
                 .build();
     }
 
-    @Bean public Queue qNotifRequestCreated()   { return durableQueue(Q_NOTIF_REQUEST_CREATED); }
-    @Bean public Queue qNotifRequestAssigned()  { return durableQueue(Q_NOTIF_REQUEST_ASSIGNED); }
-    @Bean public Queue qNotifRequestCompleted() { return durableQueue(Q_NOTIF_REQUEST_COMPLETED); }
-    @Bean public Queue qNotifRequestStatus()    { return durableQueue(Q_NOTIF_REQUEST_STATUS); }
-    @Bean public Queue qNotifResourceLow()      { return durableQueue(Q_NOTIF_RESOURCE_LOW); }
-    @Bean public Queue qNotifBroadcast()        { return durableQueue(Q_NOTIF_BROADCAST); }
-    @Bean public Queue qReportCompleted()       { return durableQueue(Q_REPORT_COMPLETED); }
-    @Bean public Queue qReportDistributed()     { return durableQueue(Q_REPORT_DISTRIBUTED); }
-    @Bean public Queue qLocation()              { return durableQueue(Q_LOCATION); }
+    @Bean
+    public Queue qNotifRequestCreated() {
+        return durableQueue(Q_NOTIF_REQUEST_CREATED);
+    }
+
+    @Bean
+    public Queue qNotifRequestAssigned() {
+        return durableQueue(Q_NOTIF_REQUEST_ASSIGNED);
+    }
+
+    @Bean
+    public Queue qNotifRequestCompleted() {
+        return durableQueue(Q_NOTIF_REQUEST_COMPLETED);
+    }
+
+    @Bean
+    public Queue qNotifRequestStatus() {
+        return durableQueue(Q_NOTIF_REQUEST_STATUS);
+    }
+
+    @Bean
+    public Queue qNotifResourceLow() {
+        return durableQueue(Q_NOTIF_RESOURCE_LOW);
+    }
+
+    @Bean
+    public Queue qNotifBroadcast() {
+        return durableQueue(Q_NOTIF_BROADCAST);
+    }
+
+    @Bean
+    public Queue qReportCompleted() {
+        return durableQueue(Q_REPORT_COMPLETED);
+    }
+
+    @Bean
+    public Queue qReportDistributed() {
+        return durableQueue(Q_REPORT_DISTRIBUTED);
+    }
+
+    @Bean
+    public Queue qLocation() {
+        return durableQueue(Q_LOCATION);
+    }
 
     @Bean
     public Queue qDlq() {
