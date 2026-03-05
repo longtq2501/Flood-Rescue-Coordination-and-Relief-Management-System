@@ -1,8 +1,0 @@
-spring:
-  jpa:
-    show-sql: true
-
-logging:
-  level:
-    com.floodrescue: DEBUG
-    org.springframework.security: DEBUG
