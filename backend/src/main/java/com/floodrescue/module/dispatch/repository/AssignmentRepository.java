@@ -1,0 +1,27 @@
+package com.floodrescue.module.dispatch.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.floodrescue.module.dispatch.domain.entity.Assignment;
+import com.floodrescue.module.dispatch.domain.enums.AssignmentStatus;
+
+@Repository
+public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
+
+    Page<Assignment> findAllByOrderByAssignedAtDesc(Pageable pageable);
+
+    List<Assignment> findByTeamIdOrderByAssignedAtDesc(Long teamId);
+
+    boolean existsByRequestIdAndStatus(Long requestId, AssignmentStatus status);
+
+    Optional<Assignment> findByRequestIdAndStatus(Long requestId, AssignmentStatus status);
+
+    // Coordinator xem assignments theo status
+    List<Assignment> findByStatus(AssignmentStatus status);
+}

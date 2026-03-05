@@ -1,10 +1,11 @@
 package com.floodrescue.shared.response;
 
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.Builder;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -22,6 +23,15 @@ public class ApiResponse<T> {
                 .success(true)
                 .message(message)
                 .data(data)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // dùng khi không cần data (ví dụ logout, delete)
+    public static <T> ApiResponse<T> success(String message) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
