@@ -1,382 +1,251 @@
-# 🌊 Flood Rescue Coordination and Relief Management System
+# FLOOD RESCUE COORDINATION & RELIEF MANAGEMENT SYSTEM
 
-> A microservices-based platform for managing flood emergency rescue operations — from citizen rescue requests to team dispatching, relief supply tracking, and real-time coordination.
+> A microservices platform built for real flood emergency scenarios — coordinating rescue requests, team dispatching, GPS tracking, relief supply management, and real-time operations monitoring across 5 actor roles.
 
-![Java](https://img.shields.io/badge/Java-Spring%20Boot-6DB33F?style=flat&logo=springboot&logoColor=white)
-![Next.js](https://img.shields.io/badge/Frontend-Next.js-000000?style=flat&logo=nextdotjs&logoColor=white)
-![Docker](https://img.shields.io/badge/Deploy-Docker-2496ED?style=flat&logo=docker&logoColor=white)
-![RabbitMQ](https://img.shields.io/badge/Broker-RabbitMQ-FF6600?style=flat&logo=rabbitmq&logoColor=white)
-![Kafka](https://img.shields.io/badge/Streaming-Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white)
+[![Java](https://img.shields.io/badge/Java-Spring%20Boot-6DB33F?style=flat&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Docker](https://img.shields.io/badge/Deploy-Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
+[![RabbitMQ](https://img.shields.io/badge/Broker-RabbitMQ-FF6600?style=flat&logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com)
+[![Kafka](https://img.shields.io/badge/Streaming-Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)](https://kafka.apache.org)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white)](https://github.com/features/actions)
 
----
-
-## 📌 Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Actors & Roles](#actors--roles)
-- [Tech Stack](#tech-stack)
-- [Microservices](#microservices)
-- [Getting Started](#getting-started)
-- [Deployment on VPS](#deployment-on-vps)
-- [CI/CD Pipeline](#cicd-pipeline)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+> 🚧 **Active Development** — Currently in Sprint 1. Architecture, infrastructure, and module skeleton are complete. Feature implementation is in progress across the team.
 
 ---
 
-## 📖 Overview
+## Context
 
-During flood disasters, rescue and relief operations often suffer from fragmented information, delayed responses, and poor coordination between forces. This system addresses those challenges by providing a **centralized microservices platform** that:
+Flood disasters in Vietnam suffer from a coordination gap: rescue requests come in through informal channels, teams are dispatched manually, and relief supply tracking is done on paper. This system centralizes the entire operation — from a citizen submitting a GPS-tagged rescue request to a coordinator dispatching the nearest available team, tracked live on a map.
 
-- Accepts and tracks rescue requests from citizens in real time
-- Dispatches rescue teams and vehicles efficiently via a coordination dashboard
-- Monitors relief supply inventory and distribution
-- Communicates between services via **RabbitMQ** (task events & notifications) and **Kafka** (real-time data streaming)
-- Deployed on a **VPS** using **Docker Compose** with automated **CI/CD via GitHub Actions**
+**This is a 6-person team project.** As Tech Lead, my responsibilities cover: architecture decisions, tech stack selection, microservices module skeleton setup (frontend + backend), full infrastructure configuration, CI/CD pipeline, and sprint management via Jira.
 
 ---
 
-## 🏗️ Architecture
+## Operational Flow
+
+The system supports 5 actor roles with distinct workflows that connect end-to-end:
 
 ```
-                        ┌────────────────────┐
-                        │   Next.js Frontend  │
-                        └────────┬───────────┘
-                                 │ HTTPS
-                        ┌────────▼───────────┐
-                        │   Nginx Reverse     │
-                        │      Proxy          │
-                        └──┬──────┬──────┬───┘
-                           │      │      │
-              ┌────────────▼─┐ ┌──▼───┐ ┌▼────────────┐
-              │ Rescue Request│ │ User │ │  Resource   │
-              │   Service     │ │ Svc  │ │  Service    │
-              └──────┬────────┘ └──┬───┘ └──────┬──────┘
-                     │             │             │
-              ┌──────▼─────────────▼─────────────▼──────┐
-              │              Message Layer                │
-              │  RabbitMQ  (task events & notifications)  │
-              │  Kafka     (real-time streams & logs)     │
-              └──────┬─────────────┬─────────────┬───────┘
-                     │             │             │
-              ┌──────▼──┐   ┌──────▼──┐   ┌─────▼───────┐
-              │Dispatch │   │ Notif.  │   │ Reporting   │
-              │ Service │   │ Service │   │  Service    │
-              └─────────┘   └─────────┘   └─────────────┘
+CITIZEN
+  → Submit rescue request (GPS + description + photos + headcount)
+  → Receive SSE notification: "Team dispatched"
+  → Confirm rescue completion
+
+        ↓
+
+COORDINATOR
+  → Receive SSE alert: "New request"
+  → Verify request (PENDING → VERIFIED)
+  → Open map: view available rescue teams by proximity & capacity
+  → Assign team + vehicle
+  → Monitor GPS tracking of team in real time
+
+        ↓
+
+RESCUE TEAM
+  → Receive SSE alert: "New mission assigned"
+  → View mission details (address, headcount, description)
+  → Start → GPS auto-reports every 10s → Coordinator sees live on map
+  → Complete + submit result notes
+
+        ↓
+
+CITIZEN
+  → Receive SSE: "Rescue team completed"
+  → Confirm → Request moves to CONFIRMED
+
+        ↓
+
+MANAGER (parallel oversight)
+  → Dashboard: daily request count, completion rate, avg response time
+  → Relief supply warehouse management → distribute to victims
+  → Low-stock alerts
+  → Per-team performance reports
 ```
 
 ---
 
-## ✨ Features
+## Architecture
 
-### 👤 Citizen
-- Submit rescue requests with location, description, and images
-- Track request status and receive real-time notifications
-- Confirm rescue completion or relief received
+### Why Microservices — and Why Modular Monolith First
 
-### 🚤 Rescue Team
-- Receive assigned rescue missions
-- View request details and rescue location on map
-- Update task progress and report results
+The system is architected as microservices, but **development begins as a modular monolith**. This is a deliberate engineering decision: establish correct business logic and service boundaries before introducing the operational overhead of distributed systems. Once Sprint 1 business flows are validated, services will be extracted independently.
 
-### 🧭 Rescue Coordinator
-- Receive and verify incoming rescue requests
-- Classify urgency levels
-- Dispatch rescue teams and vehicles
-- Monitor and adjust request handling in real time
+Each service owns its own database (Database per Service pattern), communicates asynchronously via message brokers, and is independently deployable.
 
-### 🗂️ Manager
-- Manage rescue vehicles and their availability status
-- Manage relief supply warehouse and inventory
-- Track and record relief distribution
-- Generate resource usage statistics
+```
+                    ┌──────────────────────┐
+                    │    Next.js Frontend   │
+                    └──────────┬───────────┘
+                               │ HTTPS
+                    ┌──────────▼───────────┐
+                    │    Nginx Reverse Proxy │
+                    └───┬──────┬───────┬───┘
+                        │      │       │
+         ┌──────────────▼─┐ ┌──▼───┐ ┌▼─────────────┐
+         │ rescue-request  │ │ user │ │   resource   │
+         │    service      │ │ svc  │ │   service    │
+         └───────┬─────────┘ └──┬───┘ └──────┬───────┘
+                 │               │             │
+         ┌───────▼───────────────▼─────────────▼───────┐
+         │                 Message Layer                 │
+         │   RabbitMQ — task events & notifications      │
+         │   Kafka    — real-time streams & audit logs   │
+         └───────┬───────────────┬─────────────┬────────┘
+                 │               │             │
+         ┌───────▼────┐  ┌───────▼──┐  ┌──────▼────────┐
+         │  dispatch  │  │ notif.   │  │  reporting    │
+         │  service   │  │ service  │  │  service      │
+         └────────────┘  └──────────┘  └───────────────┘
+```
 
-### 🔧 Admin
-- Manage user accounts and role-based access control
-- Configure system categories and parameters
-- Generate comprehensive activity reports
+**Message flow:**
+- `rescue-request-service` → **RabbitMQ** → `dispatch-service` (new request ready for assignment)
+- `dispatch-service` → **RabbitMQ** → `notification-service` (status updates to citizens & teams via SSE)
+- All services → **Kafka** → `reporting-service` (event streaming for analytics & audit logs)
 
----
+### Why RabbitMQ and Kafka — not just one?
 
-## 👥 Actors & Roles
-
-| Role | Description |
-|------|-------------|
-| **Citizen** | Flood victims who submit rescue or relief requests |
-| **Rescue Team** | Field teams executing assigned rescue missions |
-| **Rescue Coordinator** | Operators who verify requests and dispatch resources |
-| **Manager** | Oversees vehicles, inventory, and resource statistics |
-| **Admin** | System administrator with full configuration access |
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js (React) |
-| **Backend Services** | Spring Boot (Java 17) |
-| **API Proxy** | Nginx (Reverse Proxy) |
-| **Message Broker** | RabbitMQ — task events & notifications |
-| **Data Streaming** | Apache Kafka — real-time streams & logs |
-| **Database** | PostgreSQL (per service) |
-| **Maps** | Google Maps API / Leaflet.js |
-| **Auth** | JWT + Spring Security |
-| **Containerization** | Docker + Docker Compose |
-| **CI/CD** | GitHub Actions |
-| **Deployment** | VPS (Ubuntu) |
+They solve different problems. RabbitMQ handles **task-based messaging** — discrete events that must be consumed exactly once (a rescue request assigned to exactly one team). Kafka handles **event streaming** — high-throughput, ordered, replayable logs that feed the reporting service. Using one for both would mean either losing replay capability or overcomplicating task routing.
 
 ---
 
-## 🧩 Microservices
+## Microservices
 
 | Service | Responsibility | Port |
-|---------|---------------|------|
-| `user-service` | Authentication, user management, role-based access | 8081 |
-| `rescue-request-service` | Submit, verify, classify, and track rescue requests | 8082 |
-| `dispatch-service` | Assign teams and vehicles to requests | 8083 |
-| `resource-service` | Vehicle fleet and relief supply management | 8084 |
-| `notification-service` | Real-time alerts (RabbitMQ consumer) | 8085 |
-| `reporting-service` | Statistics, activity reports, resource usage | 8086 |
-
-> Each service owns its **own database** following the *Database per Service* pattern.
-
-**Message Flow:**
-- `rescue-request-service` → **RabbitMQ** → `dispatch-service` (new request assigned)
-- `dispatch-service` → **RabbitMQ** → `notification-service` (status update alerts)
-- All services → **Kafka** → `reporting-service` (event logging & analytics)
+|:--------|:--------------|:----:|
+| `user-service` | Auth, user management, RBAC | 8081 |
+| `rescue-request-service` | Submit, verify, classify, track requests | 8082 |
+| `dispatch-service` | Assign teams & vehicles, GPS tracking | 8083 |
+| `resource-service` | Vehicle fleet & relief supply inventory | 8084 |
+| `notification-service` | SSE delivery (RabbitMQ consumer) | 8085 |
+| `reporting-service` | Statistics, performance reports (Kafka consumer) | 8086 |
 
 ---
 
-## 🚀 Getting Started
+## Tech Stack
 
-### Prerequisites
-
-```bash
-Java >= 17
-Maven >= 3.8
-Node.js >= 18.x
-Docker >= 24.x
-Docker Compose >= 2.x
 ```
+Frontend          Next.js · React · TypeScript
+                  Tailwind CSS · Shadcn/UI
+                  Google Maps API / Leaflet.js
 
-### Run Locally (Development)
+Backend           Spring Boot (Java 17) — per service
+                  JPA/Hibernate · PostgreSQL (per service)
+                  Spring Security · JWT
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/flood-rescue-system.git
-cd flood-rescue-system
+Messaging         RabbitMQ — task events & notifications
+                  Apache Kafka — streaming & audit logs
 
-# 2. Start local infrastructure (PostgreSQL, RabbitMQ, Kafka, Zookeeper)
-docker compose -f docker-compose.infra.yml up -d
-
-# 3. Start all backend services
-cd services/user-service && mvn spring-boot:run &
-cd services/rescue-request-service && mvn spring-boot:run &
-# ... repeat for each service
-
-# 4. Start frontend
-cd frontend
-npm install
-npm run dev
-```
-
-### Environment Variables
-
-Each service has its own `.env` file. Copy from examples:
-
-```bash
-cp services/user-service/.env.example          services/user-service/.env
-cp services/rescue-request-service/.env.example services/rescue-request-service/.env
-# ... repeat for each service
-cp frontend/.env.example frontend/.env.local
-```
-
-Key variables:
-
-```env
-# Database (per service)
-DB_URL=jdbc:postgresql://localhost:5432/service_db
-DB_USERNAME=postgres
-DB_PASSWORD=secret
-
-# RabbitMQ
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=guest
-RABBITMQ_PASSWORD=guest
-
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-
-# JWT
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRATION=86400000
-
-# Frontend (Next.js)
-NEXT_PUBLIC_API_BASE_URL=http://localhost
-NEXT_PUBLIC_MAPS_API_KEY=your_google_maps_api_key
+Infrastructure    Nginx (reverse proxy)
+                  Docker + Docker Compose
+                  VPS (Ubuntu) deployment
+                  GitHub Actions (CI/CD)
 ```
 
 ---
 
-## 🖥️ Deployment on VPS
+## Infrastructure & CI/CD
 
-### 1. Prepare the VPS
-
-```bash
-# Install Docker & Docker Compose
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-
-# Install Nginx
-sudo apt install nginx -y
-```
-
-### 2. Deploy with Docker Compose
-
-```bash
-# SSH into VPS and clone the repo
-git clone https://github.com/your-org/flood-rescue-system.git /opt/flood-rescue-system
-cd /opt/flood-rescue-system
-
-# Copy and configure production env files
-cp .env.prod.example .env.prod
-
-# Start all services
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Verify running containers
-docker compose -f docker-compose.prod.yml ps
-```
-
-### 3. Nginx Reverse Proxy Config
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    location /api/users/      { proxy_pass http://localhost:8081; }
-    location /api/requests/   { proxy_pass http://localhost:8082; }
-    location /api/dispatch/   { proxy_pass http://localhost:8083; }
-    location /api/resources/  { proxy_pass http://localhost:8084; }
-    location /api/reports/    { proxy_pass http://localhost:8086; }
-    location /                { proxy_pass http://localhost:3000; }  # Next.js
-}
-```
-
-> 💡 Enable HTTPS with **Let's Encrypt + Certbot**: `sudo certbot --nginx -d yourdomain.com`
-
----
-
-## ⚙️ CI/CD Pipeline
-
-Automated pipeline via **GitHub Actions** triggered on every push to `main`:
+Infrastructure is fully configured and deployed. The pipeline triggers on every push to `main`:
 
 ```
 Push to main
-    │
-    ├── 🧪 Run unit tests (each service)
-    ├── 🐳 Build Docker images
-    ├── 📦 Push images to Docker Hub / GHCR
-    └── 🚀 SSH into VPS → git pull → docker compose up -d
+  │
+  ├── Build Docker images (per service)
+  ├── Push to Docker Hub
+  └── SSH into VPS → docker compose up -d
 ```
 
-Pipeline config: `.github/workflows/deploy.yml`
+### Local Development Setup
 
-```yaml
-on:
-  push:
-    branches: [main]
+```bash
+# Clone
+git clone https://github.com/longtq2501/Flood-Rescue-Coordination-and-Relief-Management-System.git
+cd Flood-Rescue-Coordination-and-Relief-Management-System
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+# Start infrastructure (PostgreSQL, RabbitMQ, Kafka, Zookeeper)
+docker compose -f docker-compose.infra.yml up -d
 
-      - name: Build Docker Images
-        run: docker compose -f docker-compose.prod.yml build
+# Backend (repeat per service)
+cd backend/user-service && mvn spring-boot:run
 
-      - name: Push to Docker Hub
-        run: |
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-          docker compose -f docker-compose.prod.yml push
-
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /opt/flood-rescue-system
-            git pull origin main
-            docker compose -f docker-compose.prod.yml up -d --build
+# Frontend
+cd frontend && npm install && npm run dev
 ```
 
-**Required GitHub Secrets:**
+### Production Deployment (VPS)
 
-| Secret | Description |
-|--------|-------------|
-| `VPS_HOST` | VPS IP address or domain |
-| `VPS_USER` | SSH username (e.g. `ubuntu`) |
-| `VPS_SSH_KEY` | Private SSH key |
-| `DOCKER_USERNAME` | Docker Hub username |
-| `DOCKER_PASSWORD` | Docker Hub access token |
+```bash
+# On VPS
+git clone ... /opt/flood-rescue
+cd /opt/flood-rescue
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Nginx routes requests by path prefix to the appropriate service. HTTPS via Let's Encrypt + Certbot.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 flood-rescue-system/
-├── services/
-│   ├── user-service/                # Spring Boot — Auth & Users
-│   ├── rescue-request-service/      # Spring Boot — Rescue Requests
-│   ├── dispatch-service/            # Spring Boot — Team Dispatching
-│   ├── resource-service/            # Spring Boot — Vehicles & Inventory
-│   ├── notification-service/        # Spring Boot — RabbitMQ Consumer
-│   └── reporting-service/           # Spring Boot — Kafka Consumer & Reports
-├── frontend/                        # Next.js App
+├── backend/
+│   ├── user-service/
+│   ├── rescue-request-service/
+│   ├── dispatch-service/
+│   ├── resource-service/
+│   ├── notification-service/
+│   └── reporting-service/
+├── frontend/
 ├── infrastructure/
-│   ├── nginx/
-│   │   └── nginx.conf
-│   └── kafka/
-│       └── kafka-config.yml
-├── docker-compose.infra.yml         # Local infra (DB, RabbitMQ, Kafka)
-├── docker-compose.prod.yml          # Production full stack
-├── .github/
-│   └── workflows/
-│       └── deploy.yml               # CI/CD pipeline
-└── README.md
+│   ├── nginx/nginx.conf
+│   └── kafka/kafka-config.yml
+├── docs/
+├── docker-compose.infra.yml
+├── docker-compose.prod.yml
+└── .github/workflows/deploy.yml
 ```
 
 ---
 
-## 🤝 Contributing
+## Team & Workflow
 
-1. Fork the repository
-2. Create a new branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m "feat: add your feature"`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
+**Team size:** 6 members  
+**Project management:** Jira (sprint planning, task breakdown, progress tracking)  
+**Branching strategy:** `feature/*` → `develop` → `main` (merge on sprint completion)
 
-Please follow the [Conventional Commits](https://www.conventionalcommits.org/) standard for commit messages.
+**Tech Lead responsibilities (Tôn Quỳnh Long):**
+- Architecture design & service boundary decisions
+- Tech stack selection
+- Module skeleton setup — frontend features, backend service structure
+- Full infrastructure configuration (Docker, Nginx, Kafka, RabbitMQ)
+- CI/CD pipeline setup (GitHub Actions → VPS)
+- Sprint planning & task delegation via Jira
+
+Team members are currently implementing features within the established skeleton across all services and the frontend.
 
 ---
 
-## 📄 License
+## Development Status
 
-This project is licensed under the [MIT License](LICENSE).
+| Area | Status |
+|:-----|:------:|
+| Architecture & service boundaries | ✅ Complete |
+| Infrastructure (Docker, Nginx, Kafka, RabbitMQ) | ✅ Complete |
+| CI/CD pipeline | ✅ Complete |
+| Module skeleton (FE + BE) | ✅ Complete |
+| Feature implementation | 🚧 In Progress |
+| Integration testing | ⏳ Planned |
+| Production deployment | ⏳ Post Sprint 1 |
 
 ---
 
-<div align="center">
-  <sub>Built with ❤️ to help save lives during flood emergencies.</sub>
-</div>
+## Author & Contact
+
+**Tôn Quỳnh Long** — Third-year IT student, Tech Lead  
+Concurrently maintaining [Tutor Pro](https://github.com/longtq2501/Tutor-Pro) — a solo full-stack production project.
+
+📧 tonquynhlong05@gmail.com  
+🔗 [GitHub](https://github.com/longtq2501) · [Linkedln](https://www.linkedin.com/in/ton-quynh-long-dev)
