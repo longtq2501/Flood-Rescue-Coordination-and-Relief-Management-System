@@ -1,0 +1,3 @@
+# Mở file .gitignore trong frontend/ và thêm
+node_modules/
+.next/
