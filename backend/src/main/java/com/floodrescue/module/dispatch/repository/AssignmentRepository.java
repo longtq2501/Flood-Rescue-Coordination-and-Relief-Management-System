@@ -18,6 +18,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
     List<Assignment> findByTeamIdOrderByAssignedAtDesc(Long teamId);
 
+    List<Assignment> findByTeamIdAndStatusOrderByAssignedAtDesc(Long teamId, AssignmentStatus status);
+
     boolean existsByRequestIdAndStatus(Long requestId, AssignmentStatus status);
 
     Optional<Assignment> findByRequestIdAndStatus(Long requestId, AssignmentStatus status);

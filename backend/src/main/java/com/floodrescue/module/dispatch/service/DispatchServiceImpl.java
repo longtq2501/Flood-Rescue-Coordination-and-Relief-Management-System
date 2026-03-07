@@ -55,7 +55,16 @@ public class DispatchServiceImpl implements DispatchService {
                 List<RescueTeam> teams = (status == null) ? teamRepository.findAll()
                                 : teamRepository.findByStatus(status);
                 return teams.stream()
-                                .map(this::toTeamResponse)
+                                .map(team -> RescueTeamResponse.builder()
+                                                .id(team.getId())
+                                                .name(team.getName())
+                                                .leaderId(team.getLeaderId())
+                                                .capacity(team.getCapacity())
+                                                .status(team.getStatus())
+                                                .currentLat(team.getCurrentLat())
+                                                .currentLng(team.getCurrentLng())
+                                                .createdAt(team.getCreatedAt())
+                                                .build())
                                 .collect(Collectors.toList());
         }
 
@@ -69,16 +78,6 @@ public class DispatchServiceImpl implements DispatchService {
         @Override
         @Transactional
         public AssignmentResponse assignTeam(AssignTeamRequest request, Long coordinatorId) {
-                RescueTeam team = teamRepository.findById(request.getTeamId())
-                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
-                if (team.getStatus() != TeamStatus.AVAILABLE) {
-                        throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
-                }
-
-                if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(), AssignmentStatus.ACTIVE)) {
-                        throw new AppException(ErrorCode.VALIDATION_ERROR, "Request đã được assign");
-                }
-
                 String lockKey = TEAM_LOCK_PREFIX + request.getTeamId();
                 Boolean locked = redisTemplate.opsForValue()
                                 .setIfAbsent(lockKey, "LOCKED", LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -88,8 +87,19 @@ public class DispatchServiceImpl implements DispatchService {
                 }
 
                 try {
+                        RescueTeam team = teamRepository.findById(request.getTeamId())
+                                        .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                        if (team.getStatus() != TeamStatus.AVAILABLE) {
+                                throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
+                        }
+
+                        if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(), AssignmentStatus.ACTIVE)) {
+                                throw new AppException(ErrorCode.VALIDATION_ERROR, "Request đã được assign");
+                        }
+
                         Assignment assignment = Assignment.builder()
                                         .requestId(request.getRequestId())
+                                        .citizenId(request.getCitizenId())
                                         .team(team)
                                         .vehicleId(request.getVehicleId())
                                         .coordinatorId(coordinatorId)
@@ -106,6 +116,7 @@ public class DispatchServiceImpl implements DispatchService {
                                         .teamName(team.getName())
                                         .vehicleId(assignment.getVehicleId())
                                         .coordinatorId(coordinatorId)
+                                        .citizenId(assignment.getCitizenId())
                                         .build();
                         eventPublisher.publishRequestAssigned(event);
 
@@ -127,7 +138,7 @@ public class DispatchServiceImpl implements DispatchService {
                                 .orElseGet(() -> teamRepository.findByMemberUserId(userId)
                                                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND)));
 
-                List<Assignment> assignments = assignmentRepository.findByTeamIdOrderByAssignedAtDesc(team.getId());
+                List<Assignment> assignments = assignmentRepository.findByTeamIdAndStatusOrderByAssignedAtDesc(team.getId(), AssignmentStatus.ACTIVE);
                 return assignments.stream()
                                 .map(this::toAssignmentResponse)
                                 .collect(Collectors.toList());
@@ -138,6 +149,13 @@ public class DispatchServiceImpl implements DispatchService {
         public AssignmentResponse startAssignment(Long assignmentId, Long userId) {
                 Assignment assignment = assignmentRepository.findById(assignmentId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+
+                RescueTeam team = assignment.getTeam();
+                boolean isLeader = team.getLeaderId().equals(userId);
+                boolean isMember = team.getMembers().stream().anyMatch(m -> m.getUserId().equals(userId));
+                if (!isLeader && !isMember) {
+                        throw new AppException(ErrorCode.VALIDATION_ERROR, "User không thuộc team thực hiện nhiệm vụ");
+                }
 
                 if (assignment.getStatus() != AssignmentStatus.ACTIVE) {
                         throw new AppException(ErrorCode.ASSIGNMENT_INVALID_STATUS);
@@ -155,6 +173,10 @@ public class DispatchServiceImpl implements DispatchService {
                 Assignment assignment = assignmentRepository.findById(assignmentId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
 
+                if (assignment.getStartedAt() == null) {
+                        throw new AppException(ErrorCode.VALIDATION_ERROR, "Nhiệm vụ chưa bắt đầu");
+                }
+
                 assignment.setStatus(AssignmentStatus.COMPLETED);
                 assignment.setCompletedAt(LocalDateTime.now());
                 assignment.setResultNote(resultNote);
@@ -165,14 +187,15 @@ public class DispatchServiceImpl implements DispatchService {
                 teamRepository.save(team);
 
                 int durationMinutes = 0;
-                if (assignment.getAssignedAt() != null && assignment.getCompletedAt() != null) {
+                if (assignment.getStartedAt() != null && assignment.getCompletedAt() != null) {
                         durationMinutes = (int) Duration
-                                        .between(assignment.getAssignedAt(), assignment.getCompletedAt()).toMinutes();
+                                        .between(assignment.getStartedAt(), assignment.getCompletedAt()).toMinutes();
                 }
 
                 RescueRequestCompletedEvent event = RescueRequestCompletedEvent.builder()
                                 .requestId(assignment.getRequestId())
                                 .teamId(team.getId())
+                                .citizenId(assignment.getCitizenId())
                                 .completedAt(assignment.getCompletedAt())
                                 .durationMinutes(durationMinutes)
                                 .result(resultNote)
