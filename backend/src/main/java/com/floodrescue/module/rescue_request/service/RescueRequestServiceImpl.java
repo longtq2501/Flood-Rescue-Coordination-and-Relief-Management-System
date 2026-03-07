@@ -324,9 +324,50 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     }
 
     private RescueRequestResponse toResponse(RescueRequest request) {
-        // TODO Cường: implement mapping
         // Gợi ý: map images → minioService.getPresignedUrl(image.getImageUrl())
+        List<String> imageUrls = request.getImages() == null
+                ? List.of()
+                : request.getImages().stream()
+                        .map(img -> minioService.getPresignedUrl(img.getImageUrl()))
+                        .collect(Collectors.toList());
+
         // map statusHistories → StatusHistoryResponse
-        throw new UnsupportedOperationException("TODO: Cường implement toResponse()");
+        List<StatusHistoryResponse> histories = request.getStatusHistories() == null
+                ? List.of()
+                : request.getStatusHistories().stream()
+                        .sorted((a, b) -> {
+                            if (a.getChangedAt() == null)
+                                return -1;
+                            if (b.getChangedAt() == null)
+                                return 1;
+                            return a.getChangedAt().compareTo(b.getChangedAt());
+                        })
+                        .map(h -> StatusHistoryResponse.builder()
+                                .fromStatus(h.getFromStatus())
+                                .toStatus(h.getToStatus())
+                                .changedBy(h.getChangedBy())
+                                .note(h.getNote())
+                                .changedAt(h.getChangedAt())
+                                .build())
+                        .collect(Collectors.toList());
+
+        return RescueRequestResponse.builder()
+                .id(request.getId())
+                .citizenId(request.getCitizenId())
+                .lat(request.getLat())
+                .lng(request.getLng())
+                .addressText(request.getAddressText())
+                .description(request.getDescription())
+                .numPeople(request.getNumPeople())
+                .urgencyLevel(request.getUrgencyLevel())
+                .status(request.getStatus())
+                .coordinatorId(request.getCoordinatorId())
+                .imageUrls(imageUrls)
+                .statusHistories(histories)
+                .verifiedAt(request.getVerifiedAt())
+                .completedAt(request.getCompletedAt())
+                .confirmedAt(request.getConfirmedAt())
+                .createdAt(request.getCreatedAt())
+                .build();
     }
 }
