@@ -2,16 +2,23 @@ package com.floodrescue.module.rescue_request.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.floodrescue.module.rescue_request.domain.entity.RequestImage;
 import com.floodrescue.module.rescue_request.domain.entity.RescueRequest;
 import com.floodrescue.module.rescue_request.domain.entity.StatusHistory;
 import com.floodrescue.module.rescue_request.domain.enums.RequestStatus;
+import com.floodrescue.module.rescue_request.domain.enums.UrgencyLevel;
+import com.floodrescue.module.rescue_request.dto.response.StatusHistoryResponse;
+import com.floodrescue.module.rescue_request.event.RescueRequestCreatedEvent;
+import com.floodrescue.module.rescue_request.event.RescueRequestStatusUpdatedEvent;
 import com.floodrescue.module.rescue_request.dto.request.CancelRequestDto;
 import com.floodrescue.module.rescue_request.dto.request.CreateRescueRequestDto;
 import com.floodrescue.module.rescue_request.dto.request.VerifyRequestDto;
@@ -144,17 +151,22 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<RescueRequestResponse> getMy(Long citizenId, Pageable pageable) {
-        // TODO Cường: implement
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        return requestRepository
+                .findByCitizenId(citizenId, pageable)
+                .map(this::toResponse);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public RescueRequestResponse getById(Long requestId) {
-        // TODO Cường: implement
         // Gợi ý: dùng requestRepository.findByIdWithDetails(requestId)
         // map images → presigned URLs qua minioService.getPresignedUrl(objectName)
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        RescueRequest request = requestRepository.findByIdWithDetails(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                        "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+        return toResponse(request);
     }
 
     @Override
