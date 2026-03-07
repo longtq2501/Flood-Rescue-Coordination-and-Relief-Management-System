@@ -14,4 +14,7 @@ public class AssignTeamRequest {
 
     @NotNull(message = "vehicleId không được để trống")
     private Long vehicleId;
+
+    @NotNull(message = "citizenId không được để trống")
+    private Long citizenId;
 }

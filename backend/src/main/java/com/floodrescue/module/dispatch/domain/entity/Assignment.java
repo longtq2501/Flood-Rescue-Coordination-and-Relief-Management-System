@@ -47,6 +47,9 @@ public class Assignment {
     @Column(name = "vehicle_id", nullable = false)
     private Long vehicleId;
 
+    @Column(name = "citizen_id", nullable = false)
+    private Long citizenId;
+
     @Column(name = "coordinator_id", nullable = false)
     private Long coordinatorId;
 
