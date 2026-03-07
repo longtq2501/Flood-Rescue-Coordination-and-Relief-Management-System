@@ -19,6 +19,8 @@ import com.floodrescue.module.rescue_request.dto.response.RescueRequestResponse;
 import com.floodrescue.module.rescue_request.event.RescueRequestEventPublisher;
 import com.floodrescue.module.rescue_request.repository.RescueRequestRepository;
 import com.floodrescue.module.rescue_request.repository.StatusHistoryRepository;
+import com.floodrescue.shared.exception.AppException;
+import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.shared.util.MinioService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,34 +37,77 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     private final RescueRequestEventPublisher eventPublisher;
     private final MinioService minioService;
 
+    // ==================== WRITE OPERATIONS ====================
+
     @Override
     @Transactional
     public RescueRequestResponse create(CreateRescueRequestDto dto,
             Long citizenId,
             List<MultipartFile> images) {
-        // TODO Cường: implement
-        // Step 1: Kiểm tra citizen không có request PENDING/IN_PROGRESS/ASSIGNED
-        // → throw AppException(ErrorCode.VALIDATION_ERROR, "Bạn đang có yêu cầu chưa xử
-        // lý")
-        // → dùng: requestRepository.existsByCitizenIdAndStatusIn(citizenId,
-        // List.of(...))
+
+        // Step 1: Kiểm tra citizen không có request đang hoạt động
+        if (requestRepository.existsByCitizenIdAndStatusIn(citizenId,
+                List.of(RequestStatus.PENDING, RequestStatus.VERIFIED,
+                        RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS))) {
+            throw new AppException(ErrorCode.REQUEST_ALREADY_ACTIVE,
+                    "Bạn đang có yêu cầu chưa xử lý. Vui lòng đợi yêu cầu hiện tại được giải quyết.");
+        }
 
         // Step 2: Phân loại urgency tự động
-        // → UrgencyLevel urgency = classificationService.classify(dto);
+        UrgencyLevel urgency = classificationService.classify(dto);
+        log.info("Classified urgency for citizenId={}: {}", citizenId, urgency);
 
-        // Step 3: Tạo RescueRequest entity, lưu DB
+        // Step 3: Tạo RescueRequest entity và lưu DB
+        RescueRequest request = RescueRequest.builder()
+                .citizenId(citizenId)
+                .lat(dto.getLat())
+                .lng(dto.getLng())
+                .addressText(dto.getAddressText())
+                .description(dto.getDescription())
+                .numPeople(dto.getNumPeople() != null ? dto.getNumPeople() : 1)
+                .urgencyLevel(urgency)
+                .status(RequestStatus.PENDING)
+                .build();
+
+        request = requestRepository.save(request);
+        log.info("Saved RescueRequest id={} for citizenId={}", request.getId(), citizenId);
 
         // Step 4: Upload ảnh lên MinIO (nếu có)
         // → minioService.uploadFile(file, "rescue-requests") → trả về objectName
         // → tạo RequestImage entity cho mỗi ảnh, lưu DB
+        if (images != null && !images.isEmpty()) {
+            for (MultipartFile file : images) {
+                if (file != null && !file.isEmpty()) {
+                    String objectName = minioService.uploadFile(file, "rescue-requests");
+                    RequestImage image = RequestImage.builder()
+                            .request(request)
+                            .imageUrl(objectName)
+                            .build();
+                    request.getImages().add(image);
+                }
+            }
+        }
 
         // Step 5: Lưu StatusHistory đầu tiên (PENDING)
+        saveStatusHistory(request, null, RequestStatus.PENDING,
+                citizenId, "Citizen gửi yêu cầu cứu hộ");
 
         // Step 6: Publish event
         // → eventPublisher.publishRequestCreated(...)
+        RescueRequestCreatedEvent event = RescueRequestCreatedEvent.builder()
+                .requestId(request.getId())
+                .citizenId(citizenId)
+                .citizenName("Citizen_" + citizenId)
+                .lat(request.getLat())
+                .lng(request.getLng())
+                .urgencyLevel(urgency.name())
+                .description(request.getDescription())
+                .numPeople(request.getNumPeople())
+                .build();
+        eventPublisher.publishRequestCreated(event);
 
         // Step 7: Trả về RescueRequestResponse
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        return toResponse(request);
     }
 
     @Override
