@@ -266,13 +266,44 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     @Override
     @Transactional
     public RescueRequestResponse confirm(Long requestId, Long citizenId) {
-        // TODO Cường: implement
         // Step 1: Tìm request, kiểm tra citizenId == request.citizenId
+        RescueRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                        "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+        if (!citizenId.equals(request.getCitizenId())) {
+            throw new AppException(ErrorCode.REQUEST_FORBIDDEN,
+                    "Bạn không có quyền xác nhận yêu cầu này");
+        }
+
         // Step 2: Kiểm tra status == COMPLETED
+        if (request.getStatus() != RequestStatus.COMPLETED) {
+            throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                    "Chỉ xác nhận được yêu cầu đã hoàn thành (COMPLETED). Trạng thái hiện tại: "
+                            + request.getStatus());
+        }
+
         // Step 3: Đổi status → CONFIRMED, set confirmedAt
+        RequestStatus prevStatus = request.getStatus();
+        request.setStatus(RequestStatus.CONFIRMED);
+        request.setConfirmedAt(LocalDateTime.now());
+        requestRepository.save(request);
+
         // Step 4: Lưu StatusHistory
+        saveStatusHistory(request, prevStatus, RequestStatus.CONFIRMED,
+                citizenId, "Citizen xác nhận đã được cứu hộ thành công");
+
         // Step 5: Publish event
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                .requestId(request.getId())
+                .citizenId(request.getCitizenId())
+                .fromStatus(prevStatus.name())
+                .toStatus(RequestStatus.CONFIRMED.name())
+                .changedBy(citizenId)
+                .note("Citizen xác nhận đã được cứu hộ thành công")
+                .build());
+
+        return toResponse(request);
     }
 
     // ==================== PRIVATE HELPERS ====================
