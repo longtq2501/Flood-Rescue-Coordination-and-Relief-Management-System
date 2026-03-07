@@ -28,10 +28,10 @@ import com.floodrescue.module.dispatch.event.RescueRequestAssignedEvent;
 import com.floodrescue.module.dispatch.event.RescueRequestCompletedEvent;
 import com.floodrescue.module.dispatch.event.TeamLocationUpdatedEvent;
 import com.floodrescue.module.dispatch.repository.AssignmentRepository;
-import com.floodrescue.shared.exception.AppException;
-import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.module.dispatch.repository.LocationLogRepository;
 import com.floodrescue.module.dispatch.repository.RescueTeamRepository;
+import com.floodrescue.shared.exception.AppException;
+import com.floodrescue.shared.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,7 +93,8 @@ public class DispatchServiceImpl implements DispatchService {
                                 throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
                         }
 
-                        if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(), AssignmentStatus.ACTIVE)) {
+                        if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(),
+                                        AssignmentStatus.ACTIVE)) {
                                 throw new AppException(ErrorCode.VALIDATION_ERROR, "Request đã được assign");
                         }
 
@@ -138,7 +139,8 @@ public class DispatchServiceImpl implements DispatchService {
                                 .orElseGet(() -> teamRepository.findByMemberUserId(userId)
                                                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND)));
 
-                List<Assignment> assignments = assignmentRepository.findByTeamIdAndStatusOrderByAssignedAtDesc(team.getId(), AssignmentStatus.ACTIVE);
+                List<Assignment> assignments = assignmentRepository
+                                .findByTeamIdAndStatusOrderByAssignedAtDesc(team.getId(), AssignmentStatus.ACTIVE);
                 return assignments.stream()
                                 .map(this::toAssignmentResponse)
                                 .collect(Collectors.toList());
