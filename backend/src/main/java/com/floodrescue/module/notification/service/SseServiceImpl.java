@@ -75,9 +75,14 @@ public class SseServiceImpl implements SseService {
     public void sendToRole(String role, SseEvent event) {
         java.util.List<Long> targetUsers = userRoles.entrySet().stream()
                 .filter(entry -> role.equals(entry.getValue()))
-                .map(Map.Entry::getKey)
+                .map(java.util.Map.Entry::getKey)
                 .toList();
-        targetUsers.forEach(userId -> sendToUser(userId, event));
+
+        // Collect targets first before sending to avoid concurrent modification during
+        // iteration
+        for (Long userId : targetUsers) {
+            sendToUser(userId, event);
+        }
     }
 
     @Override
