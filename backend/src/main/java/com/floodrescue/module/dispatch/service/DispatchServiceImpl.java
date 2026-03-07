@@ -1,6 +1,9 @@
 package com.floodrescue.module.dispatch.service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
@@ -10,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.floodrescue.module.dispatch.domain.entity.Assignment;
+import com.floodrescue.module.dispatch.domain.entity.LocationLog;
 import com.floodrescue.module.dispatch.domain.entity.RescueTeam;
+import com.floodrescue.module.dispatch.domain.enums.AssignmentStatus;
 import com.floodrescue.module.dispatch.domain.enums.TeamStatus;
 import com.floodrescue.module.dispatch.dto.request.AssignTeamRequest;
 import com.floodrescue.module.dispatch.dto.request.LocationUpdateRequest;
@@ -19,7 +24,12 @@ import com.floodrescue.module.dispatch.dto.response.MapDataResponse;
 import com.floodrescue.module.dispatch.dto.response.RescueTeamResponse;
 import com.floodrescue.module.dispatch.dto.response.TeamMemberResponse;
 import com.floodrescue.module.dispatch.event.DispatchEventPublisher;
+import com.floodrescue.module.dispatch.event.RescueRequestAssignedEvent;
+import com.floodrescue.module.dispatch.event.RescueRequestCompletedEvent;
+import com.floodrescue.module.dispatch.event.TeamLocationUpdatedEvent;
 import com.floodrescue.module.dispatch.repository.AssignmentRepository;
+import com.floodrescue.shared.exception.AppException;
+import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.module.dispatch.repository.LocationLogRepository;
 import com.floodrescue.module.dispatch.repository.RescueTeamRepository;
 
@@ -31,160 +41,237 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class DispatchServiceImpl implements DispatchService {
 
-    private final RescueTeamRepository teamRepository;
-    private final AssignmentRepository assignmentRepository;
-    private final LocationLogRepository locationLogRepository;
-    private final DispatchEventPublisher eventPublisher;
-    private final RedisTemplate<String, Object> redisTemplate;
+        private final RescueTeamRepository teamRepository;
+        private final AssignmentRepository assignmentRepository;
+        private final LocationLogRepository locationLogRepository;
+        private final DispatchEventPublisher eventPublisher;
+        private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String TEAM_LOCK_PREFIX = "lock:team:";
-    private static final long LOCK_TIMEOUT_SECONDS = 30;
+        private static final String TEAM_LOCK_PREFIX = "lock:team:";
+        private static final long LOCK_TIMEOUT_SECONDS = 30;
 
-    @Override
-    public List<RescueTeamResponse> getTeams(TeamStatus status) {
-        // TODO Tuấn Anh: implement
-        // Gợi ý: status == null → findAll(), có status → findByStatus(status)
-        // map sang RescueTeamResponse dùng toTeamResponse()
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+        @Override
+        public List<RescueTeamResponse> getTeams(TeamStatus status) {
+                List<RescueTeam> teams = (status == null) ? teamRepository.findAll()
+                                : teamRepository.findByStatus(status);
+                return teams.stream()
+                                .map(this::toTeamResponse)
+                                .collect(Collectors.toList());
+        }
 
-    @Override
-    public RescueTeamResponse getTeamById(Long teamId) {
-        // TODO Tuấn Anh: implement
-        // Gợi ý: teamRepository.findByIdWithMembers(teamId)
-        // .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND))
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+        @Override
+        public RescueTeamResponse getTeamById(Long teamId) {
+                RescueTeam team = teamRepository.findByIdWithMembers(teamId)
+                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                return toTeamResponse(team);
+        }
 
-    @Override
-    @Transactional
-    public AssignmentResponse assignTeam(AssignTeamRequest request, Long coordinatorId) {
-        // TODO Tuấn Anh: implement với Redis distributed lock
-        //
-        // Step 1: Kiểm tra team AVAILABLE
-        // RescueTeam team = teamRepository.findById(request.getTeamId())
-        // .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
-        // if (team.getStatus() != TeamStatus.AVAILABLE)
-        // throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
-        //
-        // Step 2: Kiểm tra request chưa có ACTIVE assignment
-        // if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(),
-        // AssignmentStatus.ACTIVE))
-        // throw new AppException(ErrorCode.VALIDATION_ERROR, "Request đã được assign");
-        //
-        // Step 3: Acquire Redis lock
-        // String lockKey = TEAM_LOCK_PREFIX + request.getTeamId();
-        // Boolean locked = redisTemplate.opsForValue()
-        // .setIfAbsent(lockKey, "LOCKED", LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        // if (!Boolean.TRUE.equals(locked))
-        // throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
-        //
-        // Step 4: Tạo Assignment, lưu DB
-        // Step 5: Đổi team.status = BUSY, lưu DB
-        // Step 6: Release lock: redisTemplate.delete(lockKey)
-        // Step 7: Publish event: eventPublisher.publishRequestAssigned(...)
-        // Step 8: Trả về toAssignmentResponse(assignment)
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+        @Override
+        @Transactional
+        public AssignmentResponse assignTeam(AssignTeamRequest request, Long coordinatorId) {
+                RescueTeam team = teamRepository.findById(request.getTeamId())
+                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                if (team.getStatus() != TeamStatus.AVAILABLE) {
+                        throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
+                }
 
-    @Override
-    public Page<AssignmentResponse> getAssignments(Pageable pageable) {
-        // TODO Tuấn Anh: implement
-        // assignmentRepository.findAllByOrderByAssignedAtDesc(pageable)
-        // .map(this::toAssignmentResponse)
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                if (assignmentRepository.existsByRequestIdAndStatus(request.getRequestId(), AssignmentStatus.ACTIVE)) {
+                        throw new AppException(ErrorCode.VALIDATION_ERROR, "Request đã được assign");
+                }
 
-    @Override
-    public List<AssignmentResponse> getMyAssignments(Long userId) {
-        // TODO Tuấn Anh: implement
-        // Step 1: Tìm team của userId (là leader hoặc member)
-        // teamRepository.findByLeaderId(userId)
-        // hoặc teamRepository.findByMemberUserId(userId)
-        // Step 2: Lấy assignments của team đó
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                String lockKey = TEAM_LOCK_PREFIX + request.getTeamId();
+                Boolean locked = redisTemplate.opsForValue()
+                                .setIfAbsent(lockKey, "LOCKED", LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-    @Override
-    @Transactional
-    public AssignmentResponse startAssignment(Long assignmentId, Long userId) {
-        // TODO Tuấn Anh: implement
-        // Step 1: Tìm assignment, kiểm tra status == ACTIVE
-        // Step 2: Set startedAt = LocalDateTime.now()
-        // Step 3: Lưu DB, trả về toAssignmentResponse()
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                if (!Boolean.TRUE.equals(locked)) {
+                        throw new AppException(ErrorCode.TEAM_UNAVAILABLE);
+                }
 
-    @Override
-    @Transactional
-    public AssignmentResponse completeAssignment(Long assignmentId, Long userId, String resultNote) {
-        // TODO Tuấn Anh: implement
-        // Step 1: Tìm assignment
-        // Step 2: Set status = COMPLETED, completedAt = now(), resultNote
-        // Step 3: Đổi team.status = AVAILABLE
-        // Step 4: Tính durationMinutes = giữa assignedAt và completedAt
-        // Step 5: Publish: eventPublisher.publishRequestCompleted(...)
-        // (cần citizenId — Tuấn Anh hỏi Long nếu cần query sang db_request)
-        // Step 6: Trả về toAssignmentResponse()
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                try {
+                        Assignment assignment = Assignment.builder()
+                                        .requestId(request.getRequestId())
+                                        .team(team)
+                                        .vehicleId(request.getVehicleId())
+                                        .coordinatorId(coordinatorId)
+                                        .status(AssignmentStatus.ACTIVE)
+                                        .build();
+                        assignment = assignmentRepository.save(assignment);
 
-    @Override
-    @Transactional
-    public void updateLocation(LocationUpdateRequest request, Long userId) {
-        // TODO Tuấn Anh: implement
-        // Step 1: Tìm team của userId
-        // teamRepository.findByLeaderId(userId) hoặc findByMemberUserId(userId)
-        // Step 2: Lưu LocationLog mới
-        // Step 3: Update team.currentLat + currentLng
-        // Step 4: Publish: eventPublisher.publishTeamLocationUpdated(...)
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                        team.setStatus(TeamStatus.BUSY);
+                        teamRepository.save(team);
 
-    @Override
-    public MapDataResponse getMapData() {
-        // TODO Tuấn Anh: implement
-        // Step 1: Lấy tất cả teams
-        // Step 2: Với mỗi team lấy latest location từ
-        // locationLogRepository.findLatestByTeamId()
-        // Step 3: Map sang MapDataResponse.TeamLocationDto
-        throw new UnsupportedOperationException("TODO: Tuấn Anh implement");
-    }
+                        RescueRequestAssignedEvent event = RescueRequestAssignedEvent.builder()
+                                        .requestId(assignment.getRequestId())
+                                        .teamId(team.getId())
+                                        .teamName(team.getName())
+                                        .vehicleId(assignment.getVehicleId())
+                                        .coordinatorId(coordinatorId)
+                                        .build();
+                        eventPublisher.publishRequestAssigned(event);
 
-    // ==================== PRIVATE HELPERS ====================
+                        return toAssignmentResponse(assignment);
+                } finally {
+                        redisTemplate.delete(lockKey);
+                }
+        }
 
-    private RescueTeamResponse toTeamResponse(RescueTeam team) {
-        return RescueTeamResponse.builder()
-                .id(team.getId())
-                .name(team.getName())
-                .leaderId(team.getLeaderId())
-                .capacity(team.getCapacity())
-                .status(team.getStatus())
-                .currentLat(team.getCurrentLat())
-                .currentLng(team.getCurrentLng())
-                .createdAt(team.getCreatedAt())
-                .members(team.getMembers().stream()
-                        .map(m -> TeamMemberResponse.builder()
-                                .userId(m.getUserId())
-                                .joinedAt(m.getJoinedAt())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
-    }
+        @Override
+        public Page<AssignmentResponse> getAssignments(Pageable pageable) {
+                return assignmentRepository.findAllByOrderByAssignedAtDesc(pageable)
+                                .map(this::toAssignmentResponse);
+        }
 
-    private AssignmentResponse toAssignmentResponse(Assignment a) {
-        return AssignmentResponse.builder()
-                .id(a.getId())
-                .requestId(a.getRequestId())
-                .teamId(a.getTeam().getId())
-                .teamName(a.getTeam().getName())
-                .vehicleId(a.getVehicleId())
-                .coordinatorId(a.getCoordinatorId())
-                .status(a.getStatus())
-                .assignedAt(a.getAssignedAt())
-                .startedAt(a.getStartedAt())
-                .completedAt(a.getCompletedAt())
-                .resultNote(a.getResultNote())
-                .build();
-    }
+        @Override
+        public List<AssignmentResponse> getMyAssignments(Long userId) {
+                RescueTeam team = teamRepository.findByLeaderId(userId)
+                                .orElseGet(() -> teamRepository.findByMemberUserId(userId)
+                                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND)));
+
+                List<Assignment> assignments = assignmentRepository.findByTeamIdOrderByAssignedAtDesc(team.getId());
+                return assignments.stream()
+                                .map(this::toAssignmentResponse)
+                                .collect(Collectors.toList());
+        }
+
+        @Override
+        @Transactional
+        public AssignmentResponse startAssignment(Long assignmentId, Long userId) {
+                Assignment assignment = assignmentRepository.findById(assignmentId)
+                                .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+
+                if (assignment.getStatus() != AssignmentStatus.ACTIVE) {
+                        throw new AppException(ErrorCode.ASSIGNMENT_INVALID_STATUS);
+                }
+
+                assignment.setStartedAt(LocalDateTime.now());
+                assignment = assignmentRepository.save(assignment);
+
+                return toAssignmentResponse(assignment);
+        }
+
+        @Override
+        @Transactional
+        public AssignmentResponse completeAssignment(Long assignmentId, Long userId, String resultNote) {
+                Assignment assignment = assignmentRepository.findById(assignmentId)
+                                .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
+
+                assignment.setStatus(AssignmentStatus.COMPLETED);
+                assignment.setCompletedAt(LocalDateTime.now());
+                assignment.setResultNote(resultNote);
+                assignment = assignmentRepository.save(assignment);
+
+                RescueTeam team = assignment.getTeam();
+                team.setStatus(TeamStatus.AVAILABLE);
+                teamRepository.save(team);
+
+                int durationMinutes = 0;
+                if (assignment.getAssignedAt() != null && assignment.getCompletedAt() != null) {
+                        durationMinutes = (int) Duration
+                                        .between(assignment.getAssignedAt(), assignment.getCompletedAt()).toMinutes();
+                }
+
+                RescueRequestCompletedEvent event = RescueRequestCompletedEvent.builder()
+                                .requestId(assignment.getRequestId())
+                                .teamId(team.getId())
+                                .completedAt(assignment.getCompletedAt())
+                                .durationMinutes(durationMinutes)
+                                .result(resultNote)
+                                .build();
+                eventPublisher.publishRequestCompleted(event);
+
+                return toAssignmentResponse(assignment);
+        }
+
+        @Override
+        @Transactional
+        public void updateLocation(LocationUpdateRequest request, Long userId) {
+                RescueTeam team = teamRepository.findByLeaderId(userId)
+                                .orElseGet(() -> teamRepository.findByMemberUserId(userId)
+                                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND)));
+
+                LocationLog logEntry = LocationLog.builder()
+                                .team(team)
+                                .lat(request.getLat())
+                                .lng(request.getLng())
+                                .speed(request.getSpeed())
+                                .heading(request.getHeading())
+                                .build();
+                locationLogRepository.save(logEntry);
+
+                team.setCurrentLat(request.getLat());
+                team.setCurrentLng(request.getLng());
+                teamRepository.save(team);
+
+                TeamLocationUpdatedEvent event = TeamLocationUpdatedEvent.builder()
+                                .teamId(team.getId())
+                                .lat(request.getLat())
+                                .lng(request.getLng())
+                                .speed(request.getSpeed())
+                                .heading(request.getHeading())
+                                .build();
+                eventPublisher.publishTeamLocationUpdated(event);
+        }
+
+        @Override
+        public MapDataResponse getMapData() {
+                List<RescueTeam> teams = teamRepository.findAll();
+                List<MapDataResponse.TeamLocationDto> dtoList = teams.stream()
+                                .map(team -> {
+                                        MapDataResponse.TeamLocationDto.TeamLocationDtoBuilder builder = MapDataResponse.TeamLocationDto
+                                                        .builder()
+                                                        .teamId(team.getId())
+                                                        .teamName(team.getName())
+                                                        .status(team.getStatus().name());
+
+                                        locationLogRepository.findLatestByTeamId(team.getId()).ifPresent(log -> {
+                                                builder.lat(log.getLat())
+                                                                .lng(log.getLng())
+                                                                .lastUpdated(log.getLoggedAt());
+                                        });
+
+                                        return builder.build();
+                                })
+                                .collect(Collectors.toList());
+
+                return MapDataResponse.builder()
+                                .teams(dtoList)
+                                .build();
+        }
+
+        // ==================== PRIVATE HELPERS ====================
+
+        private RescueTeamResponse toTeamResponse(RescueTeam team) {
+                return RescueTeamResponse.builder()
+                                .id(team.getId())
+                                .name(team.getName())
+                                .leaderId(team.getLeaderId())
+                                .capacity(team.getCapacity())
+                                .status(team.getStatus())
+                                .currentLat(team.getCurrentLat())
+                                .currentLng(team.getCurrentLng())
+                                .createdAt(team.getCreatedAt())
+                                .members(team.getMembers().stream()
+                                                .map(m -> TeamMemberResponse.builder()
+                                                                .userId(m.getUserId())
+                                                                .joinedAt(m.getJoinedAt())
+                                                                .build())
+                                                .collect(Collectors.toList()))
+                                .build();
+        }
+
+        private AssignmentResponse toAssignmentResponse(Assignment a) {
+                return AssignmentResponse.builder()
+                                .id(a.getId())
+                                .requestId(a.getRequestId())
+                                .teamId(a.getTeam().getId())
+                                .teamName(a.getTeam().getName())
+                                .vehicleId(a.getVehicleId())
+                                .coordinatorId(a.getCoordinatorId())
+                                .status(a.getStatus())
+                                .assignedAt(a.getAssignedAt())
+                                .startedAt(a.getStartedAt())
+                                .completedAt(a.getCompletedAt())
+                                .resultNote(a.getResultNote())
+                                .build();
+        }
 }
