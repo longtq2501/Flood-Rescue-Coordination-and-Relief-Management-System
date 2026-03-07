@@ -58,11 +58,14 @@ public class NotificationEventListener {
     public void handleRequestAssigned(RescueRequestAssignedEvent event) {
         log.info("Received rescue.request.assigned: requestId={}", event.getRequestId());
         try {
-            // TODO Quý Mạnh: gửi SSE đến CITIZEN có citizenId = event.getCitizenId()
-            // Payload cần có: requestId, teamName, estimatedArrival, message
-            throw new UnsupportedOperationException("TODO: Quý Mạnh implement");
-        } catch (UnsupportedOperationException e) {
-            throw e;
+            sseService.sendToUser(event.getCitizenId(), SseEvent.builder()
+                    .eventType("request.assigned")
+                    .payload(Map.of(
+                            "requestId", event.getRequestId(),
+                            "teamName", event.getTeamName(),
+                            "estimatedArrival", event.getEstimatedArrival(),
+                            "message", "Đội cứu hộ đã được phân công và đang trên đường đến"))
+                    .build());
         } catch (Exception e) {
             log.error("Failed handleRequestAssigned", e);
             throw e;
@@ -73,11 +76,12 @@ public class NotificationEventListener {
     public void handleRequestCompleted(RescueRequestCompletedEvent event) {
         log.info("Received rescue.request.completed: requestId={}", event.getRequestId());
         try {
-            // TODO Quý Mạnh: gửi SSE đến CITIZEN
-            // Payload: requestId, message "Đội cứu hộ đã hoàn thành, vui lòng xác nhận"
-            throw new UnsupportedOperationException("TODO: Quý Mạnh implement");
-        } catch (UnsupportedOperationException e) {
-            throw e;
+            sseService.sendToUser(event.getCitizenId(), SseEvent.builder()
+                    .eventType("request.completed")
+                    .payload(Map.of(
+                            "requestId", event.getRequestId(),
+                            "message", "Đội cứu hộ đã hoàn thành, vui lòng xác nhận"))
+                    .build());
         } catch (Exception e) {
             log.error("Failed handleRequestCompleted", e);
             throw e;
@@ -89,12 +93,14 @@ public class NotificationEventListener {
             com.floodrescue.module.resource.event.ResourceStockLowEvent event) {
         log.info("Received rescue.resource.stock.low: item={}", event.getItemName());
         try {
-            // TODO Quý Mạnh: gửi SSE đến tất cả MANAGER
-            // Payload: itemName, currentQuantity, threshold, message "Cảnh báo tồn kho
-            // thấp"
-            throw new UnsupportedOperationException("TODO: Quý Mạnh implement");
-        } catch (UnsupportedOperationException e) {
-            throw e;
+            sseService.sendToRole("MANAGER", SseEvent.builder()
+                    .eventType("resource.low.alert")
+                    .payload(Map.of(
+                            "itemName", event.getItemName(),
+                            "currentQuantity", event.getCurrentQuantity(),
+                            "threshold", event.getThreshold(),
+                            "message", "Cảnh báo tồn kho thấp"))
+                    .build());
         } catch (Exception e) {
             log.error("Failed handleResourceLow", e);
             throw e;
@@ -106,11 +112,12 @@ public class NotificationEventListener {
             com.floodrescue.module.notification.event.SystemBroadcastEvent event) {
         log.info("Received system broadcast: {}", event.getMessage());
         try {
-            // TODO Quý Mạnh: gửi SSE đến TẤT CẢ user đang online
-            // Payload: message, level (INFO/WARNING/CRITICAL)
-            throw new UnsupportedOperationException("TODO: Quý Mạnh implement");
-        } catch (UnsupportedOperationException e) {
-            throw e;
+            sseService.sendToAll(SseEvent.builder()
+                    .eventType("system.broadcast")
+                    .payload(Map.of(
+                            "message", event.getMessage(),
+                            "level", event.getLevel()))
+                    .build());
         } catch (Exception e) {
             log.error("Failed handleBroadcast", e);
             throw e;

@@ -73,9 +73,6 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void sendToRole(String role, SseEvent event) {
-        // TODO Quý Mạnh: implement
-        // Gợi ý: duyệt userRoles.entrySet()
-        // nếu value.equals(role) → sendToUser(userId, event)
         userRoles.entrySet().stream()
                 .filter(entry -> role.equals(entry.getValue()))
                 .forEach(entry -> sendToUser(entry.getKey(), event));
@@ -83,8 +80,6 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void sendToAll(SseEvent event) {
-        // TODO Quý Mạnh: implement
-        // Gợi ý: duyệt tất cả emitters → sendToUser cho mỗi userId
         emitters.keySet().forEach(userId -> sendToUser(userId, event));
     }
 
