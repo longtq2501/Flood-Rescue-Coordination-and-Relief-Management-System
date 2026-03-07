@@ -111,16 +111,36 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<RescueRequestResponse> getAll(String status,
             String urgencyLevel,
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Pageable pageable) {
-        // TODO Cường: implement
         // Gợi ý: parse String → Enum (null nếu không có)
+        RequestStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusEnum = RequestStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new AppException(ErrorCode.VALIDATION_ERROR, "Trạng thái không hợp lệ: " + status);
+            }
+        }
+
+        UrgencyLevel urgencyEnum = null;
+        if (urgencyLevel != null && !urgencyLevel.isBlank()) {
+            try {
+                urgencyEnum = UrgencyLevel.valueOf(urgencyLevel.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new AppException(ErrorCode.VALIDATION_ERROR, "Mức độ khẩn cấp không hợp lệ: " + urgencyLevel);
+            }
+        }
+
         // → requestRepository.findAllWithFilters(...)
         // → map sang RescueRequestResponse
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        return requestRepository
+                .findAllWithFilters(statusEnum, urgencyEnum, fromDate, toDate, pageable)
+                .map(this::toResponse);
     }
 
     @Override
