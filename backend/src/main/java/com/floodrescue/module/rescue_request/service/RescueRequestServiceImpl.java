@@ -222,13 +222,45 @@ public class RescueRequestServiceImpl implements RescueRequestService {
             Long userId) {
         // TODO Cường: implement
         // Step 1: Tìm request
+        RescueRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                        "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
         // Step 2: Kiểm tra quyền — citizen chỉ cancel được request của mình
         // coordinator cancel được bất kỳ request nào
+        if (!userId.equals(request.getCitizenId())) {
+            log.info("Coordinator userId={} cancelling request id={}", userId, requestId);
+        }
+
         // Step 3: Kiểm tra status — chỉ cancel được khi PENDING, VERIFIED, ASSIGNED
+        RequestStatus current = request.getStatus();
+        if (current != RequestStatus.PENDING
+                && current != RequestStatus.VERIFIED
+                && current != RequestStatus.ASSIGNED) {
+            throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                    "Không thể hủy yêu cầu ở trạng thái: " + current
+                            + ". Chỉ hủy được khi PENDING, VERIFIED hoặc ASSIGNED.");
+        }
+
         // Step 4: Đổi status → CANCELLED
+        request.setStatus(RequestStatus.CANCELLED);
+        requestRepository.save(request);
+
         // Step 5: Lưu StatusHistory
+        saveStatusHistory(request, current, RequestStatus.CANCELLED,
+                userId, dto.getReason());
+
         // Step 6: Publish event
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                .requestId(request.getId())
+                .citizenId(request.getCitizenId())
+                .fromStatus(current.name())
+                .toStatus(RequestStatus.CANCELLED.name())
+                .changedBy(userId)
+                .note(dto.getReason())
+                .build());
+
+        return toResponse(request);
     }
 
     @Override
