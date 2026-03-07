@@ -174,13 +174,45 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     public RescueRequestResponse verify(Long requestId,
             VerifyRequestDto dto,
             Long coordinatorId) {
-        // TODO Cường: implement
         // Step 1: Tìm request, kiểm tra status == PENDING → throw nếu không đúng
+        RescueRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                        "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                    "Chỉ xét duyệt được yêu cầu ở trạng thái PENDING. Trạng thái hiện tại: "
+                            + request.getStatus());
+        }
+
         // Step 2: Đổi status → VERIFIED, set coordinatorId, verifiedAt
+        RequestStatus prevStatus = request.getStatus();
+        request.setStatus(RequestStatus.VERIFIED);
+        request.setCoordinatorId(coordinatorId);
+        request.setVerifiedAt(LocalDateTime.now());
+
         // Step 3: Nếu dto.urgencyLevel != null → override urgency
+        if (dto.getUrgencyLevel() != null) {
+            request.setUrgencyLevel(dto.getUrgencyLevel());
+        }
+
+        requestRepository.save(request);
+
         // Step 4: Lưu StatusHistory (PENDING → VERIFIED)
+        saveStatusHistory(request, prevStatus, RequestStatus.VERIFIED,
+                coordinatorId, dto.getNote());
+
         // Step 5: Publish rescue.request.status.updated
-        throw new UnsupportedOperationException("TODO: Cường implement");
+        eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                .requestId(request.getId())
+                .citizenId(request.getCitizenId())
+                .fromStatus(prevStatus.name())
+                .toStatus(RequestStatus.VERIFIED.name())
+                .changedBy(coordinatorId)
+                .note(dto.getNote())
+                .build());
+
+        return toResponse(request);
     }
 
     @Override
