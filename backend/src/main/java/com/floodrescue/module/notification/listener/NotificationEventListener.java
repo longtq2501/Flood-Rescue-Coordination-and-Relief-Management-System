@@ -40,7 +40,6 @@ public class NotificationEventListener {
                     .eventType("new.request.alert")
                     .payload(Map.of(
                             "requestId", event.getRequestId(),
-                            "citizenName", event.getCitizenName(),
                             "urgencyLevel", event.getUrgencyLevel(),
                             "lat", event.getLat(),
                             "lng", event.getLng(),
