@@ -22,15 +22,6 @@ public class NotificationEventListener {
 
     private final SseService sseService;
 
-    // ================================================================
-    // TODO Quý Mạnh: implement từng handler bên dưới
-    // Mỗi handler:
-    // 1. Log nhận được event
-    // 2. Build SseEvent với đúng eventType + payload
-    // 3. Gọi sseService.sendToUser() hoặc sendToRole()
-    // 4. Wrap trong try-catch, throw exception nếu lỗi (RabbitMQ sẽ retry)
-    // ================================================================
-
     @RabbitListener(queues = RabbitMQConfig.Q_NOTIF_REQUEST_CREATED)
     public void handleRequestCreated(RescueRequestCreatedEvent event) {
         log.info("Received rescue.request.created: requestId={}", event.getRequestId());
@@ -62,6 +53,7 @@ public class NotificationEventListener {
                     .eventType("request.assigned")
                     .payload(Map.of(
                             "requestId", event.getRequestId(),
+                            "citizenId", event.getCitizenId(),
                             "teamName", event.getTeamName(),
                             "estimatedArrival", event.getEstimatedArrival(),
                             "message", "Đội cứu hộ đã được phân công và đang trên đường đến"))
@@ -80,6 +72,8 @@ public class NotificationEventListener {
                     .eventType("request.completed")
                     .payload(Map.of(
                             "requestId", event.getRequestId(),
+                            "completedAt", event.getCompletedAt(),
+                            "durationMinutes", event.getDurationMinutes(),
                             "message", "Đội cứu hộ đã hoàn thành, vui lòng xác nhận"))
                     .build());
         } catch (Exception e) {
@@ -97,6 +91,8 @@ public class NotificationEventListener {
                     .eventType("resource.low.alert")
                     .payload(Map.of(
                             "itemName", event.getItemName(),
+                            "warehouseName", event.getWarehouseName(),
+                            "unit", event.getUnit(),
                             "currentQuantity", event.getCurrentQuantity(),
                             "threshold", event.getThreshold(),
                             "message", "Cảnh báo tồn kho thấp"))

@@ -73,9 +73,11 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void sendToRole(String role, SseEvent event) {
-        userRoles.entrySet().stream()
+        java.util.List<Long> targetUsers = userRoles.entrySet().stream()
                 .filter(entry -> role.equals(entry.getValue()))
-                .forEach(entry -> sendToUser(entry.getKey(), event));
+                .map(Map.Entry::getKey)
+                .toList();
+        targetUsers.forEach(userId -> sendToUser(userId, event));
     }
 
     @Override
