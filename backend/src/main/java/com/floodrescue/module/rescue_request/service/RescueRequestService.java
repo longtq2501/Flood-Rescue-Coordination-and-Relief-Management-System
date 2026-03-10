@@ -67,4 +67,10 @@ public interface RescueRequestService {
          * Publish rescue.request.status.updated
          */
         RescueRequestResponse confirm(Long requestId, Long citizenId);
+
+        /**
+         * Internal: Đồng bộ trạng thái từ các event bên ngoài (Dispatch)
+         */
+        void syncStatus(Long requestId, com.floodrescue.module.rescue_request.domain.enums.RequestStatus status,
+                        String note, Long changedBy);
 }

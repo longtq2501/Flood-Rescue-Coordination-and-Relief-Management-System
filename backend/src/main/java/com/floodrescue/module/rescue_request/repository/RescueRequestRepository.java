@@ -17,34 +17,32 @@ import com.floodrescue.module.rescue_request.domain.enums.UrgencyLevel;
 @Repository
 public interface RescueRequestRepository extends JpaRepository<RescueRequest, Long> {
 
-    // Citizen xem yêu cầu của mình
-    Page<RescueRequest> findByCitizenId(Long citizenId, Pageable pageable);
+  // Citizen xem yêu cầu của mình
+  Page<RescueRequest> findByCitizenId(Long citizenId, Pageable pageable);
 
-    // Coordinator xem tất cả — có filter
-    @Query("""
-            SELECT r FROM RescueRequest r
-            WHERE (:status IS NULL OR r.status = :status)
-              AND (:urgencyLevel IS NULL OR r.urgencyLevel = :urgencyLevel)
-              AND (:fromDate IS NULL OR r.createdAt >= :fromDate)
-              AND (:toDate IS NULL OR r.createdAt <= :toDate)
-            ORDER BY r.createdAt DESC
-            """)
-    Page<RescueRequest> findAllWithFilters(
-            @Param("status") RequestStatus status,
-            @Param("urgencyLevel") UrgencyLevel urgencyLevel,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate,
-            Pageable pageable);
+  // Coordinator xem tất cả — có filter
+  @Query("""
+      SELECT r FROM RescueRequest r
+      WHERE (:status IS NULL OR r.status = :status)
+        AND (:urgencyLevel IS NULL OR r.urgencyLevel = :urgencyLevel)
+        AND (:fromDate IS NULL OR r.createdAt >= :fromDate)
+        AND (:toDate IS NULL OR r.createdAt <= :toDate)
+      ORDER BY r.createdAt DESC
+      """)
+  Page<RescueRequest> findAllWithFilters(
+      @Param("status") RequestStatus status,
+      @Param("urgencyLevel") UrgencyLevel urgencyLevel,
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate,
+      Pageable pageable);
 
-    // Kiểm tra citizen đã có request PENDING hoặc IN_PROGRESS chưa
-    boolean existsByCitizenIdAndStatusIn(Long citizenId, List<RequestStatus> statuses);
+  // Kiểm tra citizen đã có request PENDING hoặc IN_PROGRESS chưa
+  boolean existsByCitizenIdAndStatusIn(Long citizenId, List<RequestStatus> statuses);
 
-    // Lấy request kèm images + status history (tránh N+1)
-    @Query("""
-            SELECT DISTINCT r FROM RescueRequest r
-            LEFT JOIN FETCH r.images
-            LEFT JOIN FETCH r.statusHistories
-            WHERE r.id = :id
-            """)
-    java.util.Optional<RescueRequest> findByIdWithDetails(Long id);
+  // Lấy request kèm images + status history (tránh N+1)
+  @Query("""
+      SELECT r FROM RescueRequest r
+      WHERE r.id = :id
+      """)
+  java.util.Optional<RescueRequest> findByIdWithDetails(Long id);
 }

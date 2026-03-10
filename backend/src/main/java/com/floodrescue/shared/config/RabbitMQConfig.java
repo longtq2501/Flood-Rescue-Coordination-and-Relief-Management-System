@@ -30,7 +30,6 @@ public class RabbitMQConfig {
     public static final String RK_RESOURCE_DIST = "rescue.resource.distributed";
     public static final String RK_TEAM_LOCATION = "rescue.team.location.updated";
     public static final String RK_BROADCAST = "rescue.system.broadcast";
-    public static final String RK_RESOURCE_DISTRIBUTED = "rescue.resource.distributed";
 
     // ==================== QUEUE NAMES ====================
     public static final String Q_NOTIF_REQUEST_CREATED = "q.notification.request.created";
@@ -42,6 +41,8 @@ public class RabbitMQConfig {
     public static final String Q_REPORT_COMPLETED = "q.report.request.completed";
     public static final String Q_REPORT_DISTRIBUTED = "q.report.resource.distributed";
     public static final String Q_LOCATION = "q.dispatch.location.updated";
+    public static final String Q_REQUEST_SYNC_ASSIGNED = "q.request.sync.assigned";
+    public static final String Q_REQUEST_SYNC_COMPLETED = "q.request.sync.completed";
     public static final String Q_DLQ = "q.dlq.all";
 
     // ==================== EXCHANGES ====================
@@ -116,6 +117,16 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue qRequestSyncAssigned() {
+        return durableQueue(Q_REQUEST_SYNC_ASSIGNED);
+    }
+
+    @Bean
+    public Queue qRequestSyncCompleted() {
+        return durableQueue(Q_REQUEST_SYNC_COMPLETED);
+    }
+
+    @Bean
     public Queue qDlq() {
         // DLQ không cần dead-letter nữa
         return QueueBuilder.durable(Q_DLQ).build();
@@ -180,6 +191,18 @@ public class RabbitMQConfig {
     public Binding bindDlq() {
         return BindingBuilder.bind(qDlq())
                 .to(deadLetterExchange()).with(Q_DLQ);
+    }
+
+    @Bean
+    public Binding bindRequestSyncAssigned() {
+        return BindingBuilder.bind(qRequestSyncAssigned())
+                .to(rescueExchange()).with(RK_REQUEST_ASSIGNED);
+    }
+
+    @Bean
+    public Binding bindRequestSyncCompleted() {
+        return BindingBuilder.bind(qRequestSyncCompleted())
+                .to(rescueExchange()).with(RK_REQUEST_COMPLETED);
     }
 
     // ==================== MESSAGE CONVERTER ====================
