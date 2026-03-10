@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.floodrescue.module.notification.domain.entity.NotificationEvent;
 import com.floodrescue.module.notification.dto.response.NotificationResponse;
 import com.floodrescue.module.notification.repository.NotificationEventRepository;
 import com.floodrescue.module.notification.service.SseService;
@@ -36,10 +37,19 @@ public class SseController {
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getHistory(
             @AuthenticationPrincipal UserPrincipal principal,
             Pageable pageable) {
-        // TODO Quý Mạnh: implement — lấy lịch sử notification của user
-        // Gợi ý: notificationEventRepository
-        // .findByTargetUserIdOrderByCreatedAtDesc(principal.getId(), pageable)
-        // .map(e -> toResponse(e))
-        throw new UnsupportedOperationException("TODO: Quý Mạnh implement");
+        Page<NotificationEvent> events = notificationEventRepository
+                .findByTargetUserIdOrderByCreatedAtDesc(principal.getId(), pageable);
+
+        Page<NotificationResponse> responsePage = events.map(e -> NotificationResponse.builder()
+                .id(e.getId())
+                .eventType(e.getEventType())
+                .channel(e.getChannel())
+                .payload(e.getPayload())
+                .status(e.getStatus())
+                .sentAt(e.getSentAt())
+                .createdAt(e.getCreatedAt())
+                .build());
+
+        return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử thông báo thành công", responsePage));
     }
 }

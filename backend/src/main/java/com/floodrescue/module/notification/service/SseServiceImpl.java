@@ -73,18 +73,20 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void sendToRole(String role, SseEvent event) {
-        // TODO Quý Mạnh: implement
-        // Gợi ý: duyệt userRoles.entrySet()
-        // nếu value.equals(role) → sendToUser(userId, event)
-        userRoles.entrySet().stream()
+        java.util.List<Long> targetUsers = userRoles.entrySet().stream()
                 .filter(entry -> role.equals(entry.getValue()))
-                .forEach(entry -> sendToUser(entry.getKey(), event));
+                .map(java.util.Map.Entry::getKey)
+                .toList();
+
+        // Collect targets first before sending to avoid concurrent modification during
+        // iteration
+        for (Long userId : targetUsers) {
+            sendToUser(userId, event);
+        }
     }
 
     @Override
     public void sendToAll(SseEvent event) {
-        // TODO Quý Mạnh: implement
-        // Gợi ý: duyệt tất cả emitters → sendToUser cho mỗi userId
         emitters.keySet().forEach(userId -> sendToUser(userId, event));
     }
 
