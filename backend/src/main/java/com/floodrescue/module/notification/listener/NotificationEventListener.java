@@ -1,5 +1,6 @@
 package com.floodrescue.module.notification.listener;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -28,9 +29,9 @@ public class NotificationEventListener {
     public void handleRequestCreated(RescueRequestCreatedEvent event) {
         log.info("Received rescue.request.created: requestId={}", event.getRequestId());
         try {
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("requestId", event.getRequestId());
-            payload.put("citizenName", event.getCitizenName());
+            payload.put("citizenId", event.getCitizenId());
             payload.put("urgencyLevel", event.getUrgencyLevel());
             payload.put("lat", event.getLat());
             payload.put("lng", event.getLng());
@@ -53,7 +54,7 @@ public class NotificationEventListener {
     public void handleRequestAssigned(RescueRequestAssignedEvent event) {
         log.info("Received rescue.request.assigned: requestId={}", event.getRequestId());
         try {
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("requestId", event.getRequestId());
             payload.put("citizenId", event.getCitizenId());
             payload.put("teamName", event.getTeamName());
@@ -74,8 +75,9 @@ public class NotificationEventListener {
     public void handleRequestCompleted(RescueRequestCompletedEvent event) {
         log.info("Received rescue.request.completed: requestId={}", event.getRequestId());
         try {
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("requestId", event.getRequestId());
+            payload.put("citizenId", event.getCitizenId());
             payload.put("completedAt", event.getCompletedAt());
             payload.put("durationMinutes", event.getDurationMinutes());
             payload.put("message", "Đội cứu hộ đã hoàn thành, vui lòng xác nhận");
@@ -94,7 +96,7 @@ public class NotificationEventListener {
     public void handleResourceLow(ResourceStockLowEvent event) {
         log.info("Received rescue.resource.stock.low: item={}", event.getItemName());
         try {
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("itemName", event.getItemName());
             payload.put("warehouseName", event.getWarehouseName());
             payload.put("unit", event.getUnit());
@@ -117,7 +119,7 @@ public class NotificationEventListener {
     public void handleBroadcast(SystemBroadcastEvent event) {
         log.info("Received system broadcast: {}", event.getMessage());
         try {
-            Map<String, Object> payload = new java.util.HashMap<>();
+            Map<String, Object> payload = new HashMap<>();
             payload.put("message", event.getMessage());
             payload.put("level", event.getLevel());
 
