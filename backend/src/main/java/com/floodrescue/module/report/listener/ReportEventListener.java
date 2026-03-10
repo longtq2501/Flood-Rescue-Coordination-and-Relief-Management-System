@@ -39,12 +39,9 @@ public class ReportEventListener {
         log.info("Report received resource.distributed: distributionId={}",
                 event.getDistributionId());
         try {
-            // warehouseId không có trong event — TODO Tiến: thêm warehouseId vào
-            // ResourceDistributedEvent nếu cần, hoặc query từ distributionId
             reportService.updateResourceSnapshot(
                     LocalDate.now(),
-                    null // TODO: thêm warehouseId vào ResourceDistributedEvent
-            );
+                    event.getWarehouseId());
         } catch (Exception e) {
             log.error("Failed to update resource snapshot", e);
             throw e;
