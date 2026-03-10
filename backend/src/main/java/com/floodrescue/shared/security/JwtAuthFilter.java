@@ -1,12 +1,9 @@
 package com.floodrescue.shared.security;
 
-import com.floodrescue.module.auth.domain.entity.User;
-import com.floodrescue.module.auth.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,13 +14,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Reads X-User-Id and X-User-Role headers forwarded by the API Gateway.
+ * Gateway has already validated the JWT — this filter only extracts
+ * identity from trusted internal headers.
+ */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository   userRepository;
+    private static final String HEADER_USER_ID   = "X-User-Id";
+    private static final String HEADER_USER_ROLE = "X-User-Role";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -31,31 +32,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractToken(request);
+        String userId = request.getHeader(HEADER_USER_ID);
+        String role   = request.getHeader(HEADER_USER_ROLE);
 
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            User user   = userRepository.findById(userId).orElse(null);
-
-            if (user != null) {
-                UserPrincipal principal = new UserPrincipal(user);
+        if (StringUtils.hasText(userId) && StringUtils.hasText(role)) {
+            try {
+                UserPrincipal principal = new UserPrincipal(
+                        Long.parseLong(userId), null, role);
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 principal, null, principal.getAuthorities());
                 authentication.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid X-User-Id header: {}", userId);
             }
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private String extractToken(HttpServletRequest request) {
-        String bearer = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
-            return bearer.substring(7);
-        }
-        return null;
     }
 }

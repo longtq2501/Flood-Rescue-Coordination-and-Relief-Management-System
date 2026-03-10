@@ -1,7 +1,5 @@
 package com.floodrescue.shared.config;
 
-import com.floodrescue.module.auth.domain.entity.User;
-import com.floodrescue.module.auth.repository.UserRepository;
 import com.floodrescue.shared.security.JwtTokenProvider;
 import com.floodrescue.shared.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -16,20 +14,23 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+/**
+ * WebSocket auth interceptor that validates JWT directly.
+ * WebSocket connections bypass the Gateway's header forwarding,
+ * so this interceptor validates the JWT token itself.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository   userRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // Chỉ validate khi client gửi CONNECT frame
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
@@ -45,21 +46,17 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 throw new IllegalArgumentException("Invalid JWT token");
             }
 
-            Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            User user   = userRepository.findById(userId).orElse(null);
+            Long userId  = jwtTokenProvider.getUserIdFromToken(token);
+            String role  = jwtTokenProvider.getRoleFromToken(token);
+            String phone = jwtTokenProvider.getPhoneFromToken(token);
 
-            if (user == null) {
-                throw new IllegalArgumentException("User not found");
-            }
-
-            UserPrincipal principal = new UserPrincipal(user);
+            UserPrincipal principal = new UserPrincipal(userId, phone, role);
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             principal, null, principal.getAuthorities());
 
-            // Set authentication vào STOMP session
             accessor.setUser(authentication);
-            log.info("WebSocket CONNECT authenticated: userId={}, role={}", userId, user.getRole());
+            log.info("WebSocket CONNECT authenticated: userId={}, role={}", userId, role);
         }
 
         return message;

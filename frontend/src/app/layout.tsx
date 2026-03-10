@@ -1,12 +1,7 @@
 // src/app/layout.tsx
-'use client';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Toaster } from '@/shared/components/ui/sonner';
 import './globals.css';
-
 import type { Metadata } from 'next';
+import { Providers } from '@/shared/components/Providers';
 
 export const metadata: Metadata = {
     title: {
@@ -17,7 +12,7 @@ export const metadata: Metadata = {
     keywords: ['cứu hộ lũ lụt', 'khẩn cấp', 'cứu trợ', 'thiên tai', 'flood rescue'],
     authors: [{ name: 'Flood Rescue Team' }],
     robots: {
-        index: true,   // public → cho Google index
+        index: true,
         follow: true,
     },
     openGraph: {
@@ -33,22 +28,12 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const [queryClient] = useState(() => new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: 1,
-                staleTime: 30 * 1000,
-            },
-        },
-    }));
-
     return (
         <html lang="vi">
             <body>
-                <QueryClientProvider client={queryClient}>
+                <Providers>
                     {children}
-                    <Toaster richColors position="top-right" />
-                </QueryClientProvider>
+                </Providers>
             </body>
         </html>
     );

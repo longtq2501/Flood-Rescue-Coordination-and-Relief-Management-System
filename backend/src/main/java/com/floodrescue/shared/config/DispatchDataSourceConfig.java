@@ -8,6 +8,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -23,12 +24,14 @@ import javax.sql.DataSource;
 )
 public class DispatchDataSourceConfig {
 
+    @Primary
     @Bean(name = "dispatchDataSource")
     @ConfigurationProperties("spring.datasource.dispatch")
     public DataSource dataSource() {
         return DataSourceBuilder.create().build();
     }
 
+    @Primary
     @Bean(name = "dispatchEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
             @Qualifier("dispatchDataSource") DataSource ds,
@@ -38,6 +41,7 @@ public class DispatchDataSourceConfig {
                 .build();
     }
 
+    @Primary
     @Bean(name = "dispatchTransactionManager")
     public PlatformTransactionManager transactionManager(
             @Qualifier("dispatchEntityManagerFactory") EntityManagerFactory emf) {
