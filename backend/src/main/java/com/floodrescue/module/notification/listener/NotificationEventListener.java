@@ -8,11 +8,13 @@ import org.springframework.stereotype.Component;
 
 import com.floodrescue.module.dispatch.event.RescueRequestAssignedEvent;
 import com.floodrescue.module.dispatch.event.RescueRequestCompletedEvent;
+import com.floodrescue.module.dispatch.event.TeamLocationUpdatedEvent;
 import com.floodrescue.module.notification.dto.response.SseEvent;
+import com.floodrescue.module.notification.event.SystemBroadcastEvent;
 import com.floodrescue.module.notification.service.SseService;
 import com.floodrescue.module.rescue_request.event.RescueRequestCreatedEvent;
+import com.floodrescue.module.rescue_request.event.RescueRequestStatusUpdatedEvent;
 import com.floodrescue.module.resource.event.ResourceStockLowEvent;
-import com.floodrescue.module.notification.event.SystemBroadcastEvent;
 import com.floodrescue.shared.config.RabbitMQConfig;
 
 import lombok.RequiredArgsConstructor;
@@ -88,6 +90,50 @@ public class NotificationEventListener {
                     .build());
         } catch (Exception e) {
             log.error("Failed handleRequestCompleted", e);
+            throw e;
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.Q_NOTIF_REQUEST_STATUS)
+    public void handleRequestStatusUpdated(RescueRequestStatusUpdatedEvent event) {
+        log.info("Received rescue.request.status.updated: requestId={}, status={}",
+                event.getRequestId(), event.getToStatus());
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("requestId", event.getRequestId());
+            payload.put("status", event.getToStatus());
+            payload.put("note", event.getNote());
+            payload.put("message", "Trạng thái yêu cầu cứu hộ đã thay đổi: " + event.getToStatus());
+
+            sseService.sendToUser(event.getCitizenId(), SseEvent.builder()
+                    .eventType("request.status.updated")
+                    .payload(payload)
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed handleRequestStatusUpdated", e);
+            throw e;
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.Q_LOCATION)
+    public void handleTeamLocationUpdated(TeamLocationUpdatedEvent event) {
+        // Log mức debug để tránh ngập log vì heartbeat gửi liên tục
+        log.debug("Received rescue.team.location.updated: teamId={}", event.getTeamId());
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("teamId", event.getTeamId());
+            payload.put("lat", event.getLat());
+            payload.put("lng", event.getLng());
+            payload.put("speed", event.getSpeed());
+            payload.put("heading", event.getHeading());
+
+            // Broadcast cho tất cả COORDINATOR online để cập nhật bản đồ realtime
+            sseService.sendToRole("COORDINATOR", SseEvent.builder()
+                    .eventType("team.location.alert")
+                    .payload(payload)
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed handleTeamLocationUpdated", e);
             throw e;
         }
     }
