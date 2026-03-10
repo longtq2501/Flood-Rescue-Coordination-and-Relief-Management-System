@@ -28,6 +28,7 @@ CREATE TABLE assignments (
     request_id      BIGINT   NOT NULL,
     team_id         BIGINT   NOT NULL,
     vehicle_id      BIGINT   NOT NULL,
+    citizen_id      BIGINT   NOT NULL,
     coordinator_id  BIGINT   NOT NULL,
     status          VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     assigned_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

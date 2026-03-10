@@ -1,6 +1,6 @@
 package com.floodrescue.module.auth.repository;
 
-import com.floodrescue.module.auth.entity.RefreshToken;
+import com.floodrescue.module.auth.domain.entity.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

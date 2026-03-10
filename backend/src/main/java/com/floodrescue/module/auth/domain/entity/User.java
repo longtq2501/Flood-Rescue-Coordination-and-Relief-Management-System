@@ -1,4 +1,4 @@
-package com.floodrescue.module.auth.entity;
+package com.floodrescue.module.auth.domain.entity;
 
 import com.floodrescue.module.auth.enums.RoleType;
 import com.floodrescue.module.auth.enums.UserStatus;

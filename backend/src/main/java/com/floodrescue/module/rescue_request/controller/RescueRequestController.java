@@ -37,69 +37,69 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RescueRequestController {
 
-    private final RescueRequestService requestService;
+        private final RescueRequestService requestService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<RescueRequestResponse>> create(
-            @Valid @RequestPart("data") CreateRescueRequestDto dto,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Gửi yêu cầu thành công",
-                        requestService.create(dto, principal.getId(), images)));
-    }
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<RescueRequestResponse>> create(
+                        @Valid @RequestPart("data") CreateRescueRequestDto dto,
+                        @RequestPart(value = "images", required = false) List<MultipartFile> images,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.success("Gửi yêu cầu thành công",
+                                                requestService.create(dto, principal.getId(), images)));
+        }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<Page<RescueRequestResponse>>> getAll(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String urgencyLevel,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
-            Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success("OK",
-                requestService.getAll(status, urgencyLevel, fromDate, toDate, pageable)));
-    }
+        @GetMapping
+        public ResponseEntity<ApiResponse<Page<RescueRequestResponse>>> getAll(
+                        @RequestParam(required = false) String status,
+                        @RequestParam(required = false) String urgencyLevel,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
+                        Pageable pageable) {
+                return ResponseEntity.ok(ApiResponse.success("OK",
+                                requestService.getAll(status, urgencyLevel, fromDate, toDate, pageable)));
+        }
 
-    @GetMapping("/my")
-    public ResponseEntity<ApiResponse<Page<RescueRequestResponse>>> getMy(
-            @AuthenticationPrincipal UserPrincipal principal,
-            Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success("OK",
-                requestService.getMy(principal.getId(), pageable)));
-    }
+        @GetMapping("/my")
+        public ResponseEntity<ApiResponse<Page<RescueRequestResponse>>> getMy(
+                        @AuthenticationPrincipal UserPrincipal principal,
+                        Pageable pageable) {
+                return ResponseEntity.ok(ApiResponse.success("OK",
+                                requestService.getMy(principal.getId(), pageable)));
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RescueRequestResponse>> getById(
-            @PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("OK",
-                requestService.getById(id)));
-    }
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<RescueRequestResponse>> getById(
+                        @PathVariable Long id) {
+                return ResponseEntity.ok(ApiResponse.success("OK",
+                                requestService.getById(id)));
+        }
 
-    @PatchMapping("/{id}/verify")
-    public ResponseEntity<ApiResponse<RescueRequestResponse>> verify(
-            @PathVariable Long id,
-            @RequestBody(required = false) VerifyRequestDto dto,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        if (dto == null)
-            dto = new VerifyRequestDto();
-        return ResponseEntity.ok(ApiResponse.success("Xét duyệt thành công",
-                requestService.verify(id, dto, principal.getId())));
-    }
+        @PatchMapping("/{id}/verify")
+        public ResponseEntity<ApiResponse<RescueRequestResponse>> verify(
+                        @PathVariable Long id,
+                        @RequestBody(required = false) VerifyRequestDto dto,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+                if (dto == null)
+                        dto = new VerifyRequestDto();
+                return ResponseEntity.ok(ApiResponse.success("Xét duyệt thành công",
+                                requestService.verify(id, dto, principal.getId())));
+        }
 
-    @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse<RescueRequestResponse>> cancel(
-            @PathVariable Long id,
-            @Valid @RequestBody CancelRequestDto dto,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(ApiResponse.success("Hủy thành công",
-                requestService.cancel(id, dto, principal.getId())));
-    }
+        @PatchMapping("/{id}/cancel")
+        public ResponseEntity<ApiResponse<RescueRequestResponse>> cancel(
+                        @PathVariable Long id,
+                        @Valid @RequestBody CancelRequestDto dto,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+                return ResponseEntity.ok(ApiResponse.success("Hủy thành công",
+                                requestService.cancel(id, dto, principal.getId(), principal.getRole())));
+        }
 
-    @PatchMapping("/{id}/confirm")
-    public ResponseEntity<ApiResponse<RescueRequestResponse>> confirm(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(ApiResponse.success("Xác nhận thành công",
-                requestService.confirm(id, principal.getId())));
-    }
+        @PatchMapping("/{id}/confirm")
+        public ResponseEntity<ApiResponse<RescueRequestResponse>> confirm(
+                        @PathVariable Long id,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+                return ResponseEntity.ok(ApiResponse.success("Xác nhận thành công",
+                                requestService.confirm(id, principal.getId())));
+        }
 }

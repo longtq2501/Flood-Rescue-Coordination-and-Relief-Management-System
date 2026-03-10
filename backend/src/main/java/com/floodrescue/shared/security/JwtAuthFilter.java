@@ -1,6 +1,6 @@
 package com.floodrescue.shared.security;
 
-import com.floodrescue.module.auth.entity.User;
+import com.floodrescue.module.auth.domain.entity.User;
 import com.floodrescue.module.auth.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

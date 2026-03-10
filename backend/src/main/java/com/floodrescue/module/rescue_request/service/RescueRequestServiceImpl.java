@@ -2,23 +2,33 @@ package com.floodrescue.module.rescue_request.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.floodrescue.module.rescue_request.domain.entity.RequestImage;
 import com.floodrescue.module.rescue_request.domain.entity.RescueRequest;
 import com.floodrescue.module.rescue_request.domain.entity.StatusHistory;
 import com.floodrescue.module.rescue_request.domain.enums.RequestStatus;
+import com.floodrescue.module.rescue_request.domain.enums.UrgencyLevel;
 import com.floodrescue.module.rescue_request.dto.request.CancelRequestDto;
 import com.floodrescue.module.rescue_request.dto.request.CreateRescueRequestDto;
 import com.floodrescue.module.rescue_request.dto.request.VerifyRequestDto;
 import com.floodrescue.module.rescue_request.dto.response.RescueRequestResponse;
+import com.floodrescue.module.rescue_request.dto.response.StatusHistoryResponse;
+import com.floodrescue.module.rescue_request.event.RescueRequestCreatedEvent;
 import com.floodrescue.module.rescue_request.event.RescueRequestEventPublisher;
+import com.floodrescue.module.rescue_request.event.RescueRequestStatusUpdatedEvent;
 import com.floodrescue.module.rescue_request.repository.RescueRequestRepository;
 import com.floodrescue.module.rescue_request.repository.StatusHistoryRepository;
+import com.floodrescue.shared.exception.AppException;
+import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.shared.util.MinioService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,132 +39,362 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class RescueRequestServiceImpl implements RescueRequestService {
 
-    private final RescueRequestRepository requestRepository;
-    private final StatusHistoryRepository statusHistoryRepository;
-    private final UrgencyClassificationService classificationService;
-    private final RescueRequestEventPublisher eventPublisher;
-    private final MinioService minioService;
+        private final RescueRequestRepository requestRepository;
+        private final StatusHistoryRepository statusHistoryRepository;
+        private final UrgencyClassificationService classificationService;
+        private final RescueRequestEventPublisher eventPublisher;
+        private final MinioService minioService;
+        private final PlatformTransactionManager transactionManager;
 
-    @Override
-    @Transactional
-    public RescueRequestResponse create(CreateRescueRequestDto dto,
-            Long citizenId,
-            List<MultipartFile> images) {
-        // TODO Cường: implement
-        // Step 1: Kiểm tra citizen không có request PENDING/IN_PROGRESS/ASSIGNED
-        // → throw AppException(ErrorCode.VALIDATION_ERROR, "Bạn đang có yêu cầu chưa xử
-        // lý")
-        // → dùng: requestRepository.existsByCitizenIdAndStatusIn(citizenId,
-        // List.of(...))
+        // ==================== WRITE OPERATIONS ====================
 
-        // Step 2: Phân loại urgency tự động
-        // → UrgencyLevel urgency = classificationService.classify(dto);
+        @Override
+        public RescueRequestResponse create(CreateRescueRequestDto dto,
+                        Long citizenId,
+                        List<MultipartFile> images) {
 
-        // Step 3: Tạo RescueRequest entity, lưu DB
+                // Step 1: Kiểm tra citizen không có request đang hoạt động
+                if (requestRepository.existsByCitizenIdAndStatusIn(citizenId,
+                                List.of(RequestStatus.PENDING, RequestStatus.VERIFIED,
+                                                RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS))) {
+                        throw new AppException(ErrorCode.REQUEST_ALREADY_ACTIVE,
+                                        "Bạn đang có yêu cầu chưa xử lý. Vui lòng đợi yêu cầu hiện tại được giải quyết.");
+                }
 
-        // Step 4: Upload ảnh lên MinIO (nếu có)
-        // → minioService.uploadFile(file, "rescue-requests") → trả về objectName
-        // → tạo RequestImage entity cho mỗi ảnh, lưu DB
+                // Step 2: Phân loại urgency tự động
+                UrgencyLevel urgency = classificationService.classify(dto);
+                log.info("Classified urgency for citizenId={}: {}", citizenId, urgency);
 
-        // Step 5: Lưu StatusHistory đầu tiên (PENDING)
+                // Step 3: Upload ảnh lên MinIO TRƯỚC transaction
+                List<String> uploadedUrls = new java.util.ArrayList<>();
+                try {
+                        if (images != null && !images.isEmpty()) {
+                                for (MultipartFile file : images) {
+                                        if (file != null && !file.isEmpty()) {
+                                                uploadedUrls.add(minioService.uploadFile(file, "rescue-requests"));
+                                        }
+                                }
+                        }
+                } catch (Exception e) {
+                        uploadedUrls.forEach(minioService::deleteFile);
+                        throw new AppException(ErrorCode.VALIDATION_ERROR, "Upload ảnh thất bại: " + e.getMessage());
+                }
 
-        // Step 6: Publish event
-        // → eventPublisher.publishRequestCreated(...)
+                try {
+                        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+                        return transactionTemplate.execute(status -> {
+                                // Step 4: Tạo RescueRequest entity
+                                RescueRequest request = RescueRequest.builder()
+                                                .citizenId(citizenId)
+                                                .lat(dto.getLat())
+                                                .lng(dto.getLng())
+                                                .addressText(dto.getAddressText())
+                                                .description(dto.getDescription())
+                                                .numPeople(dto.getNumPeople() != null ? dto.getNumPeople() : 1)
+                                                .urgencyLevel(urgency)
+                                                .status(RequestStatus.PENDING)
+                                                .build();
 
-        // Step 7: Trả về RescueRequestResponse
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                                // Step 5: Add images vào list (CascadeType.ALL sẽ tự save khi save request)
+                                for (String url : uploadedUrls) {
+                                        RequestImage image = RequestImage.builder()
+                                                        .request(request)
+                                                        .imageUrl(url)
+                                                        .build();
+                                        request.getImages().add(image);
+                                }
 
-    @Override
-    public Page<RescueRequestResponse> getAll(String status,
-            String urgencyLevel,
-            LocalDateTime fromDate,
-            LocalDateTime toDate,
-            Pageable pageable) {
-        // TODO Cường: implement
-        // Gợi ý: parse String → Enum (null nếu không có)
-        // → requestRepository.findAllWithFilters(...)
-        // → map sang RescueRequestResponse
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                                // Step 6: Lưu Request + Images
+                                final RescueRequest savedRequest = requestRepository.save(request);
+                                log.info("Saved RescueRequest id={} with {} images for citizenId={}",
+                                                savedRequest.getId(), uploadedUrls.size(), citizenId);
 
-    @Override
-    public Page<RescueRequestResponse> getMy(Long citizenId, Pageable pageable) {
-        // TODO Cường: implement
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                                // Step 7: Lưu StatusHistory đầu tiên (PENDING)
+                                saveStatusHistory(savedRequest, null, RequestStatus.PENDING,
+                                                citizenId, "Citizen gửi yêu cầu cứu hộ");
 
-    @Override
-    public RescueRequestResponse getById(Long requestId) {
-        // TODO Cường: implement
-        // Gợi ý: dùng requestRepository.findByIdWithDetails(requestId)
-        // map images → presigned URLs qua minioService.getPresignedUrl(objectName)
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                                // Step 8: Publish event
+                                RescueRequestCreatedEvent event = RescueRequestCreatedEvent.builder()
+                                                .requestId(savedRequest.getId())
+                                                .citizenId(citizenId)
+                                                .lat(savedRequest.getLat())
+                                                .lng(savedRequest.getLng())
+                                                .urgencyLevel(urgency.name())
+                                                .description(savedRequest.getDescription())
+                                                .numPeople(savedRequest.getNumPeople())
+                                                .build();
+                                eventPublisher.publishRequestCreated(event);
 
-    @Override
-    @Transactional
-    public RescueRequestResponse verify(Long requestId,
-            VerifyRequestDto dto,
-            Long coordinatorId) {
-        // TODO Cường: implement
-        // Step 1: Tìm request, kiểm tra status == PENDING → throw nếu không đúng
-        // Step 2: Đổi status → VERIFIED, set coordinatorId, verifiedAt
-        // Step 3: Nếu dto.urgencyLevel != null → override urgency
-        // Step 4: Lưu StatusHistory (PENDING → VERIFIED)
-        // Step 5: Publish rescue.request.status.updated
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                                return toResponse(savedRequest);
+                        });
+                } catch (Exception e) {
+                        // Rollback files nếu DB transaction fail
+                        log.error("Database transaction failed, cleaning up uploaded files", e);
+                        uploadedUrls.forEach(minioService::deleteFile);
+                        throw e;
+                }
+        }
 
-    @Override
-    @Transactional
-    public RescueRequestResponse cancel(Long requestId,
-            CancelRequestDto dto,
-            Long userId) {
-        // TODO Cường: implement
-        // Step 1: Tìm request
-        // Step 2: Kiểm tra quyền — citizen chỉ cancel được request của mình
-        // coordinator cancel được bất kỳ request nào
-        // Step 3: Kiểm tra status — chỉ cancel được khi PENDING, VERIFIED, ASSIGNED
-        // Step 4: Đổi status → CANCELLED
-        // Step 5: Lưu StatusHistory
-        // Step 6: Publish event
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+        @Override
+        @Transactional(readOnly = true)
+        public Page<RescueRequestResponse> getAll(String status,
+                        String urgencyLevel,
+                        LocalDateTime fromDate,
+                        LocalDateTime toDate,
+                        Pageable pageable) {
+                // Gợi ý: parse String → Enum (null nếu không có)
+                RequestStatus statusEnum = null;
+                if (status != null && !status.isBlank()) {
+                        try {
+                                statusEnum = RequestStatus.valueOf(status.toUpperCase());
+                        } catch (IllegalArgumentException e) {
+                                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                                                "Trạng thái không hợp lệ: " + status);
+                        }
+                }
 
-    @Override
-    @Transactional
-    public RescueRequestResponse confirm(Long requestId, Long citizenId) {
-        // TODO Cường: implement
-        // Step 1: Tìm request, kiểm tra citizenId == request.citizenId
-        // Step 2: Kiểm tra status == COMPLETED
-        // Step 3: Đổi status → CONFIRMED, set confirmedAt
-        // Step 4: Lưu StatusHistory
-        // Step 5: Publish event
-        throw new UnsupportedOperationException("TODO: Cường implement");
-    }
+                UrgencyLevel urgencyEnum = null;
+                if (urgencyLevel != null && !urgencyLevel.isBlank()) {
+                        try {
+                                urgencyEnum = UrgencyLevel.valueOf(urgencyLevel.toUpperCase());
+                        } catch (IllegalArgumentException e) {
+                                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                                                "Mức độ khẩn cấp không hợp lệ: " + urgencyLevel);
+                        }
+                }
 
-    // ==================== PRIVATE HELPERS ====================
+                // → requestRepository.findAllWithFilters(...)
+                // → map sang RescueRequestResponse
+                return requestRepository
+                                .findAllWithFilters(statusEnum, urgencyEnum, fromDate, toDate, pageable)
+                                .map(this::toResponse);
+        }
 
-    private void saveStatusHistory(RescueRequest request,
-            RequestStatus fromStatus,
-            RequestStatus toStatus,
-            Long changedBy,
-            String note) {
-        StatusHistory history = StatusHistory.builder()
-                .request(request)
-                .fromStatus(fromStatus)
-                .toStatus(toStatus)
-                .changedBy(changedBy)
-                .note(note)
-                .build();
-        statusHistoryRepository.save(history);
-    }
+        @Override
+        @Transactional(readOnly = true)
+        public Page<RescueRequestResponse> getMy(Long citizenId, Pageable pageable) {
+                return requestRepository
+                                .findByCitizenId(citizenId, pageable)
+                                .map(this::toResponse);
+        }
 
-    private RescueRequestResponse toResponse(RescueRequest request) {
-        // TODO Cường: implement mapping
-        // Gợi ý: map images → minioService.getPresignedUrl(image.getImageUrl())
-        // map statusHistories → StatusHistoryResponse
-        throw new UnsupportedOperationException("TODO: Cường implement toResponse()");
-    }
+        @Override
+        @Transactional(readOnly = true)
+        public RescueRequestResponse getById(Long requestId) {
+                // Gợi ý: dùng requestRepository.findByIdWithDetails(requestId)
+                // map images → presigned URLs qua minioService.getPresignedUrl(objectName)
+                RescueRequest request = requestRepository.findByIdWithDetails(requestId)
+                                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                                                "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+                return toResponse(request);
+        }
+
+        @Override
+        @Transactional
+        public RescueRequestResponse verify(Long requestId,
+                        VerifyRequestDto dto,
+                        Long coordinatorId) {
+                // Step 1: Tìm request, kiểm tra status == PENDING → throw nếu không đúng
+                RescueRequest request = requestRepository.findById(requestId)
+                                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                                                "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+                if (request.getStatus() != RequestStatus.PENDING) {
+                        throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                                        "Chỉ xét duyệt được yêu cầu ở trạng thái PENDING. Trạng thái hiện tại: "
+                                                        + request.getStatus());
+                }
+
+                // Step 2: Đổi status → VERIFIED, set coordinatorId, verifiedAt
+                RequestStatus prevStatus = request.getStatus();
+                request.setStatus(RequestStatus.VERIFIED);
+                request.setCoordinatorId(coordinatorId);
+                request.setVerifiedAt(LocalDateTime.now());
+
+                // Step 3: Nếu dto.urgencyLevel != null → override urgency
+                if (dto.getUrgencyLevel() != null) {
+                        request.setUrgencyLevel(dto.getUrgencyLevel());
+                }
+
+                requestRepository.save(request);
+
+                // Step 4: Lưu StatusHistory (PENDING → VERIFIED)
+                saveStatusHistory(request, prevStatus, RequestStatus.VERIFIED,
+                                coordinatorId, dto.getNote());
+
+                // Step 5: Publish rescue.request.status.updated
+                eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                                .requestId(request.getId())
+                                .citizenId(request.getCitizenId())
+                                .fromStatus(prevStatus.name())
+                                .toStatus(RequestStatus.VERIFIED.name())
+                                .changedBy(coordinatorId)
+                                .note(dto.getNote())
+                                .build());
+
+                return toResponse(request);
+        }
+
+        @Override
+        @Transactional
+        public RescueRequestResponse cancel(Long requestId,
+                        CancelRequestDto dto,
+                        Long userId,
+                        String role) {
+                // Step 1: Tìm request
+                RescueRequest request = requestRepository.findById(requestId)
+                                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                                                "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+                // Step 2: Kiểm tra quyền
+                // Citizen chỉ cancel được request của mình
+                // Coordinator/Admin cancel được bất kỳ request nào
+                boolean isOwner = userId.equals(request.getCitizenId());
+                boolean isStaff = "COORDINATOR".equals(role) || "ADMIN".equals(role);
+
+                if (!isOwner && !isStaff) {
+                        throw new AppException(ErrorCode.REQUEST_FORBIDDEN,
+                                        "Bạn không có quyền hủy yêu cầu này");
+                }
+
+                if (isStaff && !isOwner) {
+                        log.info("Staff userId={} role={} cancelling request id={} for citizenId={}",
+                                        userId, role, requestId, request.getCitizenId());
+                }
+
+                // Step 3: Kiểm tra status — chỉ cancel được khi PENDING, VERIFIED, ASSIGNED
+                RequestStatus current = request.getStatus();
+                if (current != RequestStatus.PENDING
+                                && current != RequestStatus.VERIFIED
+                                && current != RequestStatus.ASSIGNED) {
+                        throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                                        "Không thể hủy yêu cầu ở trạng thái: " + current
+                                                        + ". Chỉ hủy được khi PENDING, VERIFIED hoặc ASSIGNED.");
+                }
+
+                // Step 4: Đổi status → CANCELLED
+                request.setStatus(RequestStatus.CANCELLED);
+                requestRepository.save(request);
+
+                // Step 5: Lưu StatusHistory
+                saveStatusHistory(request, current, RequestStatus.CANCELLED,
+                                userId, dto.getReason());
+
+                // Step 6: Publish event
+                eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                                .requestId(request.getId())
+                                .citizenId(request.getCitizenId())
+                                .fromStatus(current.name())
+                                .toStatus(RequestStatus.CANCELLED.name())
+                                .changedBy(userId)
+                                .note(dto.getReason())
+                                .build());
+
+                return toResponse(request);
+        }
+
+        @Override
+        @Transactional
+        public RescueRequestResponse confirm(Long requestId, Long citizenId) {
+                // Step 1: Tìm request, kiểm tra citizenId == request.citizenId
+                RescueRequest request = requestRepository.findById(requestId)
+                                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                                                "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+                if (!citizenId.equals(request.getCitizenId())) {
+                        throw new AppException(ErrorCode.REQUEST_FORBIDDEN,
+                                        "Bạn không có quyền xác nhận yêu cầu này");
+                }
+
+                // Step 2: Kiểm tra status == COMPLETED
+                if (request.getStatus() != RequestStatus.COMPLETED) {
+                        throw new AppException(ErrorCode.REQUEST_INVALID_STATUS,
+                                        "Chỉ xác nhận được yêu cầu đã hoàn thành (COMPLETED). Trạng thái hiện tại: "
+                                                        + request.getStatus());
+                }
+
+                // Step 3: Đổi status → CONFIRMED, set confirmedAt
+                RequestStatus prevStatus = request.getStatus();
+                request.setStatus(RequestStatus.CONFIRMED);
+                request.setConfirmedAt(LocalDateTime.now());
+                requestRepository.save(request);
+
+                // Step 4: Lưu StatusHistory
+                saveStatusHistory(request, prevStatus, RequestStatus.CONFIRMED,
+                                citizenId, "Citizen xác nhận đã được cứu hộ thành công");
+
+                // Step 5: Publish event
+                eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                                .requestId(request.getId())
+                                .citizenId(request.getCitizenId())
+                                .fromStatus(prevStatus.name())
+                                .toStatus(RequestStatus.CONFIRMED.name())
+                                .changedBy(citizenId)
+                                .note("Citizen xác nhận đã được cứu hộ thành công")
+                                .build());
+
+                return toResponse(request);
+        }
+
+        // ==================== PRIVATE HELPERS ====================
+
+        private void saveStatusHistory(RescueRequest request,
+                        RequestStatus fromStatus,
+                        RequestStatus toStatus,
+                        Long changedBy,
+                        String note) {
+                StatusHistory history = StatusHistory.builder()
+                                .request(request)
+                                .fromStatus(fromStatus)
+                                .toStatus(toStatus)
+                                .changedBy(changedBy)
+                                .note(note)
+                                .build();
+                statusHistoryRepository.save(history);
+        }
+
+        private RescueRequestResponse toResponse(RescueRequest request) {
+                // Gợi ý: map images → minioService.getPresignedUrl(image.getImageUrl())
+                List<String> imageUrls = request.getImages() == null
+                                ? List.of()
+                                : request.getImages().stream()
+                                                .map(img -> minioService.getPresignedUrl(img.getImageUrl()))
+                                                .collect(Collectors.toList());
+
+                // map statusHistories → StatusHistoryResponse
+                List<StatusHistoryResponse> histories = request.getStatusHistories() == null
+                                ? List.of()
+                                : request.getStatusHistories().stream()
+                                                .sorted(java.util.Comparator.comparing(
+                                                                StatusHistory::getChangedAt,
+                                                                java.util.Comparator.nullsFirst(
+                                                                                java.util.Comparator.naturalOrder())))
+                                                .map(h -> StatusHistoryResponse.builder()
+                                                                .fromStatus(h.getFromStatus())
+                                                                .toStatus(h.getToStatus())
+                                                                .changedBy(h.getChangedBy())
+                                                                .note(h.getNote())
+                                                                .changedAt(h.getChangedAt())
+                                                                .build())
+                                                .collect(Collectors.toList());
+
+                return RescueRequestResponse.builder()
+                                .id(request.getId())
+                                .citizenId(request.getCitizenId())
+                                .lat(request.getLat())
+                                .lng(request.getLng())
+                                .addressText(request.getAddressText())
+                                .description(request.getDescription())
+                                .numPeople(request.getNumPeople())
+                                .urgencyLevel(request.getUrgencyLevel())
+                                .status(request.getStatus())
+                                .coordinatorId(request.getCoordinatorId())
+                                .imageUrls(imageUrls)
+                                .statusHistories(histories)
+                                .verifiedAt(request.getVerifiedAt())
+                                .completedAt(request.getCompletedAt())
+                                .confirmedAt(request.getConfirmedAt())
+                                .createdAt(request.getCreatedAt())
+                                .build();
+        }
 }

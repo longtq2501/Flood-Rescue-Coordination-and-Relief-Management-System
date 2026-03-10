@@ -15,7 +15,6 @@ public class RescueRequestCreatedEvent {
 
     private Long requestId;
     private Long citizenId;
-    private String citizenName; // Cường cần query từ UserRepository — HỎI Long nếu cần
     private BigDecimal lat;
     private BigDecimal lng;
     private String urgencyLevel;
