@@ -16,6 +16,8 @@ public interface DailyResourceSnapshotRepository
     Optional<DailyResourceSnapshot> findBySnapshotDateAndWarehouseId(
             LocalDate date, Long warehouseId);
 
+    List<DailyResourceSnapshot> findBySnapshotDate(LocalDate date);
+
     List<DailyResourceSnapshot> findBySnapshotDateBetweenOrderBySnapshotDateAsc(
             LocalDate from, LocalDate to);
 }

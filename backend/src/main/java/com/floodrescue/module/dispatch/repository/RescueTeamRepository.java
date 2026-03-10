@@ -15,6 +15,8 @@ public interface RescueTeamRepository extends JpaRepository<RescueTeam, Long> {
 
     List<RescueTeam> findByStatus(TeamStatus status);
 
+    long countByStatus(TeamStatus status);
+
     List<RescueTeam> findByStatusIn(List<TeamStatus> statuses);
 
     @Query("SELECT t FROM RescueTeam t LEFT JOIN FETCH t.members WHERE t.id = :id")

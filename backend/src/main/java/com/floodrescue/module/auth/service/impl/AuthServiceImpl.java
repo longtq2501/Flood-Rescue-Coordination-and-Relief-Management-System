@@ -4,8 +4,8 @@ package com.floodrescue.module.auth.service.impl;
 import com.floodrescue.module.auth.dtos.request.*;
 import com.floodrescue.module.auth.dtos.response.LoginResponse;
 import com.floodrescue.module.auth.dtos.response.UserResponse;
-import com.floodrescue.module.auth.entity.RefreshToken;
-import com.floodrescue.module.auth.entity.User;
+import com.floodrescue.module.auth.domain.entity.RefreshToken;
+import com.floodrescue.module.auth.domain.entity.User;
 import com.floodrescue.module.auth.enums.RoleType;
 import com.floodrescue.module.auth.enums.UserStatus;
 import com.floodrescue.module.auth.repository.RefreshTokenRepository;
@@ -14,7 +14,7 @@ import com.floodrescue.module.auth.service.AuthService;
 import com.floodrescue.shared.exception.AppException;
 import com.floodrescue.shared.exception.ErrorCode;
 import com.floodrescue.shared.security.JwtTokenProvider;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private Long refreshExpirationMs;
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public UserResponse register(RegisterRequest request) {
         // Validate role — chỉ cho phép tự đăng ký CITIZEN và RESCUE_TEAM
         if (request.getRole() == RoleType.COORDINATOR
@@ -70,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByPhone(request.getPhone())
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHORIZED));
@@ -96,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public LoginResponse refreshToken(RefreshTokenRequest request) {
         RefreshToken token = refreshTokenRepository.findByToken(request.getRefreshToken())
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHORIZED));
@@ -125,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public void logout(RefreshTokenRequest request) {
         refreshTokenRepository.findByToken(request.getRefreshToken())
                 .ifPresent(token -> {
@@ -135,6 +135,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(value = "authTransactionManager", readOnly = true)
     public UserResponse getMe(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
@@ -142,7 +143,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND));
@@ -161,7 +162,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional("authTransactionManager")
     public void changePassword(Long userId, ChangePasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new AppException(ErrorCode.VALIDATION_ERROR, "Mật khẩu xác nhận không khớp");

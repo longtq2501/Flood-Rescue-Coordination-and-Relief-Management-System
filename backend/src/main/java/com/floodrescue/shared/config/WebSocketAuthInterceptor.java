@@ -1,6 +1,6 @@
 package com.floodrescue.shared.config;
 
-import com.floodrescue.module.auth.entity.User;
+import com.floodrescue.module.auth.domain.entity.User;
 import com.floodrescue.module.auth.repository.UserRepository;
 import com.floodrescue.shared.security.JwtTokenProvider;
 import com.floodrescue.shared.security.UserPrincipal;
