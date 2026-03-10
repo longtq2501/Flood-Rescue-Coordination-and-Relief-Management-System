@@ -33,7 +33,7 @@ public class DistributionServiceImpl implements DistributionService {
     private final ResourceEventPublisher eventPublisher;
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public DistributionResponse create(CreateDistributionRequest request, Long coordinatorId) {
         Distribution distribution = Distribution.builder()
                 .requestId(request.getRequestId())
@@ -73,11 +73,17 @@ public class DistributionServiceImpl implements DistributionService {
         reliefItemRepository.saveAll(impactedItems);
 
         if (firstItem != null) {
+            // Collect all unique warehouse IDs from distributed items
+            var warehouseIds = impactedItems.stream()
+                    .map(item -> item.getWarehouse().getId())
+                    .distinct()
+                    .toList();
+            
             eventPublisher.publishDistributed(ResourceDistributedEvent.builder()
                     .distributionId(savedDistribution.getId())
                     .requestId(savedDistribution.getRequestId())
                     .recipientId(savedDistribution.getRecipientId())
-                    .warehouseId(firstItem.getWarehouse().getId())
+                    .warehouseId(warehouseIds.size() == 1 ? warehouseIds.get(0) : null)
                     .totalItems(request.getItems().size())
                     .distributedAt(savedDistribution.getDistributedAt())
                     .build());
@@ -99,11 +105,13 @@ public class DistributionServiceImpl implements DistributionService {
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public Page<DistributionResponse> getAll(Pageable pageable) {
         return distributionRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public Page<DistributionResponse> getByRequestId(Long requestId, Pageable pageable) {
         return distributionRepository.findByRequestId(requestId, pageable).map(this::toResponse);
     }
