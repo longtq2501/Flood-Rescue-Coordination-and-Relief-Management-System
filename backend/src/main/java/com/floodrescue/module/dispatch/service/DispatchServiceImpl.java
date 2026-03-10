@@ -51,6 +51,7 @@ public class DispatchServiceImpl implements DispatchService {
         private static final long LOCK_TIMEOUT_SECONDS = 30;
 
         @Override
+        @Transactional(value = "dispatchTransactionManager", readOnly = true)
         public List<RescueTeamResponse> getTeams(TeamStatus status) {
                 List<RescueTeam> teams = (status == null) ? teamRepository.findAll()
                                 : teamRepository.findByStatus(status);
@@ -69,6 +70,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
+        @Transactional(value = "dispatchTransactionManager", readOnly = true)
         public RescueTeamResponse getTeamById(Long teamId) {
                 RescueTeam team = teamRepository.findByIdWithMembers(teamId)
                                 .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
@@ -76,7 +78,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
-        @Transactional
+        @Transactional("dispatchTransactionManager")
         public AssignmentResponse assignTeam(AssignTeamRequest request, Long coordinatorId) {
                 String lockKey = TEAM_LOCK_PREFIX + request.getTeamId();
                 Boolean locked = redisTemplate.opsForValue()
@@ -128,12 +130,14 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
+        @Transactional(value = "dispatchTransactionManager", readOnly = true)
         public Page<AssignmentResponse> getAssignments(Pageable pageable) {
                 return assignmentRepository.findAllByOrderByAssignedAtDesc(pageable)
                                 .map(this::toAssignmentResponse);
         }
 
         @Override
+        @Transactional(value = "dispatchTransactionManager", readOnly = true)
         public List<AssignmentResponse> getMyAssignments(Long userId) {
                 RescueTeam team = teamRepository.findByLeaderId(userId)
                                 .orElseGet(() -> teamRepository.findByMemberUserId(userId)
@@ -147,7 +151,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
-        @Transactional
+        @Transactional("dispatchTransactionManager")
         public AssignmentResponse startAssignment(Long assignmentId, Long userId) {
                 Assignment assignment = assignmentRepository.findById(assignmentId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
@@ -170,7 +174,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
-        @Transactional
+        @Transactional("dispatchTransactionManager")
         public AssignmentResponse completeAssignment(Long assignmentId, Long userId, String resultNote) {
                 Assignment assignment = assignmentRepository.findById(assignmentId)
                                 .orElseThrow(() -> new AppException(ErrorCode.ASSIGNMENT_NOT_FOUND));
@@ -208,7 +212,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
-        @Transactional
+        @Transactional("dispatchTransactionManager")
         public void updateLocation(LocationUpdateRequest request, Long userId) {
                 RescueTeam team = teamRepository.findByLeaderId(userId)
                                 .orElseGet(() -> teamRepository.findByMemberUserId(userId)
@@ -238,6 +242,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
 
         @Override
+        @Transactional(value = "dispatchTransactionManager", readOnly = true)
         public MapDataResponse getMapData() {
                 List<RescueTeam> teams = teamRepository.findAll();
                 List<MapDataResponse.TeamLocationDto> dtoList = teams.stream()

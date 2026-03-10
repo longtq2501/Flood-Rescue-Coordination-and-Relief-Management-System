@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         private final UrgencyClassificationService classificationService;
         private final RescueRequestEventPublisher eventPublisher;
         private final MinioService minioService;
+        @Qualifier("requestTransactionManager")
         private final PlatformTransactionManager transactionManager;
 
         // ==================== WRITE OPERATIONS ====================
@@ -136,7 +138,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional(readOnly = true)
+        @Transactional(value = "requestTransactionManager", readOnly = true)
         public Page<RescueRequestResponse> getAll(String status,
                         String urgencyLevel,
                         LocalDateTime fromDate,
@@ -171,7 +173,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional(readOnly = true)
+        @Transactional(value = "requestTransactionManager", readOnly = true)
         public Page<RescueRequestResponse> getMy(Long citizenId, Pageable pageable) {
                 return requestRepository
                                 .findByCitizenId(citizenId, pageable)
@@ -179,7 +181,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional(readOnly = true)
+        @Transactional(value = "requestTransactionManager", readOnly = true)
         public RescueRequestResponse getById(Long requestId) {
                 // Gợi ý: dùng requestRepository.findByIdWithDetails(requestId)
                 // map images → presigned URLs qua minioService.getPresignedUrl(objectName)
@@ -190,7 +192,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional
+        @Transactional("requestTransactionManager")
         public RescueRequestResponse verify(Long requestId,
                         VerifyRequestDto dto,
                         Long coordinatorId) {
@@ -236,7 +238,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional
+        @Transactional("requestTransactionManager")
         public RescueRequestResponse cancel(Long requestId,
                         CancelRequestDto dto,
                         Long userId,
@@ -294,7 +296,7 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         }
 
         @Override
-        @Transactional
+        @Transactional("requestTransactionManager")
         public RescueRequestResponse confirm(Long requestId, Long citizenId) {
                 // Step 1: Tìm request, kiểm tra citizenId == request.citizenId
                 RescueRequest request = requestRepository.findById(requestId)
