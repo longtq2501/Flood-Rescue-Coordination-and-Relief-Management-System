@@ -73,3 +73,8 @@ minio:
 
 server:
   port: 8080
+
+management:
+  health:
+    rabbit:
+      enabled: false

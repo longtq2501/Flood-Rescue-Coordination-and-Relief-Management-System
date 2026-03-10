@@ -49,7 +49,7 @@ public class Distribution {
     @Column(name = "distributed_at", nullable = false, updatable = false)
     private LocalDateTime distributedAt;
 
-    @OneToMany(mappedBy = "distribution", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "distribution", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DistributionItem> items = new ArrayList<>();
 

@@ -23,7 +23,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final WarehouseRepository warehouseRepository;
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public WarehouseResponse create(CreateWarehouseRequest request, Long managerId) {
         Warehouse warehouse = Warehouse.builder()
                 .name(request.getName())
@@ -34,15 +34,15 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public List<WarehouseResponse> getAll() {
-        return warehouseRepository.findAll().stream()
+        return warehouseRepository.findAllWithItems().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public WarehouseResponse getById(Long warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));

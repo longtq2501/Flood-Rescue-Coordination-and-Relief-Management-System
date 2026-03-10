@@ -27,7 +27,7 @@ public class InventoryServiceImpl implements InventoryService {
     private final WarehouseRepository warehouseRepository;
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public ReliefItemResponse addItem(CreateReliefItemRequest request) {
         Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
@@ -45,14 +45,19 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public Page<ReliefItemResponse> getItemsByWarehouse(Long warehouseId, Pageable pageable) {
         return reliefItemRepository.findByWarehouseId(warehouseId, pageable)
                 .map(ReliefItemMapper::toResponse);
     }
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public ReliefItemResponse updateStock(Long itemId, UpdateStockRequest request) {
+        if (request.getQuantity() == 0) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Số lượng không được bằng 0");
+        }
+        
         ReliefItem item = reliefItemRepository.findById(itemId)
                 .orElseThrow(() -> new AppException(ErrorCode.ITEM_NOT_FOUND));
 
@@ -67,6 +72,7 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public ReliefItemResponse getById(Long itemId) {
         return reliefItemRepository.findById(itemId)
                 .map(ReliefItemMapper::toResponse)

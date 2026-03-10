@@ -28,7 +28,7 @@ public class VehicleServiceImpl implements VehicleService {
     private final VehicleLogRepository vehicleLogRepository;
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public VehicleResponse create(CreateVehicleRequest request) {
         if (vehicleRepository.existsByPlateNumber(request.getPlateNumber())) {
             throw new AppException(ErrorCode.DUPLICATE_PLATE_NUMBER);
@@ -44,12 +44,15 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public List<VehicleResponse> getAll(VehicleStatus status, VehicleType type) {
         List<Vehicle> vehicles;
         if (status != null && type != null) {
             vehicles = vehicleRepository.findByStatusAndType(status, type);
         } else if (status != null) {
             vehicles = vehicleRepository.findByStatus(status);
+        } else if (type != null) {
+            vehicles = vehicleRepository.findByType(type);
         } else {
             vehicles = vehicleRepository.findAll();
         }
@@ -60,6 +63,7 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
+    @Transactional(value = "resourceTransactionManager", readOnly = true)
     public VehicleResponse getById(Long vehicleId) {
         return vehicleRepository.findById(vehicleId)
                 .map(this::toResponse)
@@ -67,7 +71,7 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     @Override
-    @Transactional
+    @Transactional(value = "resourceTransactionManager")
     public VehicleResponse updateStatus(Long vehicleId, VehicleStatus status, String note) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));

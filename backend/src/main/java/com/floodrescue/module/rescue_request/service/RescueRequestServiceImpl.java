@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -336,6 +336,41 @@ public class RescueRequestServiceImpl implements RescueRequestService {
                                 .build());
 
                 return toResponse(request);
+        }
+
+        @Override
+        @Transactional("requestTransactionManager")
+        public void syncStatus(Long requestId, RequestStatus status, String note, Long changedBy) {
+                RescueRequest request = requestRepository.findById(requestId)
+                                .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
+                                                "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+                RequestStatus prevStatus = request.getStatus();
+
+                // Tránh update lặp nếu status đã khớp (idempotency)
+                if (prevStatus == status) {
+                        return;
+                }
+
+                log.info("Syncing RescueRequest id={} status: {} -> {}", requestId, prevStatus, status);
+
+                request.setStatus(status);
+                if (status == RequestStatus.COMPLETED) {
+                        request.setCompletedAt(LocalDateTime.now());
+                }
+                requestRepository.save(request);
+
+                saveStatusHistory(request, prevStatus, status, changedBy, note);
+
+                // Publish event thông báo trạng thái thay đổi (để Notification module gửi SSE)
+                eventPublisher.publishStatusUpdated(RescueRequestStatusUpdatedEvent.builder()
+                                .requestId(request.getId())
+                                .citizenId(request.getCitizenId())
+                                .fromStatus(prevStatus.name())
+                                .toStatus(status.name())
+                                .changedBy(changedBy)
+                                .note(note)
+                                .build());
         }
 
         // ==================== PRIVATE HELPERS ====================
