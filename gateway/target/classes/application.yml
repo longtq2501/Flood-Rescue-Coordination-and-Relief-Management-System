@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        # Auth service routes — order matters, most specific first
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**
+
+        # Backend service routes — catch-all for remaining /api/**
+        - id: backend-service
+          uri: ${BACKEND_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/**
+
+        # WebSocket route
+        - id: backend-websocket
+          uri: ${BACKEND_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/ws/**
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redispassword}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
+
+  # Public endpoints that skip JWT validation
+  public-paths:
+    - /api/auth/register
+    - /api/auth/login
+    - /api/auth/refresh
+    - /actuator/health
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,gateway

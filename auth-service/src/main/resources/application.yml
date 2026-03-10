@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: ${DB_AUTH_URL:jdbc:mysql://localhost:3306/db_auth}
+    username: ${DB_USERNAME:rescueuser}
+    password: ${DB_PASSWORD:rescuepassword}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
+    expiration-ms: 86400000          # 24 giờ
+    refresh-expiration-ms: 604800000 # 7 ngày
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
