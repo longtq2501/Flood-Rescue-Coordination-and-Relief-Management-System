@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.floodrescue.dispatch.domain.entity.Assignment;
@@ -13,6 +14,13 @@ import com.floodrescue.dispatch.domain.enums.AssignmentStatus;
 
 @Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
+
+    @Query("""
+            SELECT a FROM Assignment a
+            JOIN FETCH a.team
+            ORDER BY a.assignedAt DESC
+            """)
+    Page<Assignment> findAllWithTeam(Pageable pageable);
 
     Page<Assignment> findAllByOrderByAssignedAtDesc(Pageable pageable);
 

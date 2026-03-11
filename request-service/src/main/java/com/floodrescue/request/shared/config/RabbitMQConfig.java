@@ -19,12 +19,12 @@ import org.springframework.context.annotation.Configuration;
  * Only declares exchanges and queues this service PRODUCES or CONSUMES.
  *
  * PRODUCES:
- *   - rescue.request.created      → routing key
- *   - rescue.request.status.updated → routing key
+ * - rescue.request.created → routing key
+ * - rescue.request.status.updated → routing key
  *
  * CONSUMES:
- *   - q.request.sync.assigned     ← dispatch publishes rescue.request.assigned
- *   - q.request.sync.completed    ← dispatch publishes rescue.request.completed
+ * - q.request.sync.assigned ← dispatch publishes rescue.request.assigned
+ * - q.request.sync.completed ← dispatch publishes rescue.request.completed
  */
 @Configuration
 public class RabbitMQConfig {

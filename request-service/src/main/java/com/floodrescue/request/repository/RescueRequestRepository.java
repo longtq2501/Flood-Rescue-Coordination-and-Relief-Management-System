@@ -2,6 +2,7 @@ package com.floodrescue.request.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,25 +21,27 @@ public interface RescueRequestRepository extends JpaRepository<RescueRequest, Lo
     Page<RescueRequest> findByCitizenId(Long citizenId, Pageable pageable);
 
     @Query("""
-        SELECT r FROM RescueRequest r
-        WHERE (:status IS NULL OR r.status = :status)
-          AND (:urgencyLevel IS NULL OR r.urgencyLevel = :urgencyLevel)
-          AND (:fromDate IS NULL OR r.createdAt >= :fromDate)
-          AND (:toDate IS NULL OR r.createdAt <= :toDate)
-        ORDER BY r.createdAt DESC
-        """)
+            SELECT r FROM RescueRequest r
+            WHERE (:status IS NULL OR r.status = :status)
+              AND (:urgencyLevel IS NULL OR r.urgencyLevel = :urgencyLevel)
+              AND (:fromDate IS NULL OR r.createdAt >= :fromDate)
+              AND (:toDate IS NULL OR r.createdAt <= :toDate)
+            ORDER BY r.createdAt DESC
+            """)
     Page<RescueRequest> findAllWithFilters(
-        @Param("status") RequestStatus status,
-        @Param("urgencyLevel") UrgencyLevel urgencyLevel,
-        @Param("fromDate") LocalDateTime fromDate,
-        @Param("toDate") LocalDateTime toDate,
-        Pageable pageable);
+            @Param("status") RequestStatus status,
+            @Param("urgencyLevel") UrgencyLevel urgencyLevel,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            Pageable pageable);
 
     boolean existsByCitizenIdAndStatusIn(Long citizenId, List<RequestStatus> statuses);
 
     @Query("""
-        SELECT r FROM RescueRequest r
-        WHERE r.id = :id
-        """)
-    java.util.Optional<RescueRequest> findByIdWithDetails(Long id);
+            SELECT DISTINCT r FROM RescueRequest r
+            LEFT JOIN FETCH r.images
+            LEFT JOIN FETCH r.statusHistories
+            WHERE r.id = :id
+            """)
+    Optional<RescueRequest> findByIdWithDetails(@Param("id") Long id);
 }
