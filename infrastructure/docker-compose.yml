@@ -10,21 +10,26 @@ services:
     build: ../gateway
     container_name: rescue-gateway
     ports:
-      - "8080:8080"    # Only Gateway exposes port to host
+      - "8080:8080"
     environment:
       AUTH_SERVICE_URL: http://auth-service:8081
-      BACKEND_SERVICE_URL: http://backend:8082
+      REQUEST_SERVICE_URL: http://request-service:8082
+      DISPATCH_SERVICE_URL: http://dispatch-service:8083
+      RESOURCE_SERVICE_URL: http://resource-service:8084
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      REPORT_SERVICE_URL: http://report-service:8086
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       REDIS_HOST: redis
       REDIS_PASSWORD: redispassword
       CORS_ALLOWED_ORIGINS: http://localhost:3000
     depends_on:
-      auth-service:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      auth-service: { condition: service_healthy }
+      request-service: { condition: service_healthy }
+      dispatch-service: { condition: service_healthy }
+      resource-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+      report-service: { condition: service_healthy }
+      redis: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 15s
@@ -36,15 +41,13 @@ services:
   auth-service:
     build: ../auth-service
     container_name: rescue-auth-service
-    # No ports mapping — internal network only
     environment:
       DB_AUTH_URL: jdbc:mysql://mysql:3306/db_auth
       DB_USERNAME: rescueuser
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
     depends_on:
-      mysql:
-        condition: service_healthy
+      mysql: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 15s
@@ -52,31 +55,118 @@ services:
       retries: 5
       start_period: 30s
 
-  # ==================== BACKEND (Monolith) ====================
-  backend:
-    build: ../backend
-    container_name: rescue-backend
-    # No ports mapping — internal network only
+  # ==================== REQUEST SERVICE ====================
+  request-service:
+    build: ../request-service
+    container_name: rescue-request-service
     environment:
-      DB_DISPATCH_URL: jdbc:mysql://mysql:3306/db_dispatch
       DB_REQUEST_URL: jdbc:mysql://mysql:3306/db_request
-      DB_RESOURCE_URL: jdbc:mysql://mysql:3306/db_resource
-      DB_NOTIFICATION_URL: jdbc:mysql://mysql:3306/db_notification
+      DB_USERNAME: rescueuser
+      DB_PASSWORD: rescuepassword
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: rescueuser
+      RABBITMQ_PASS: rescuepassword
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: rescueaccess
+      MINIO_SECRET_KEY: rescuesecret
+    depends_on:
+      mysql: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== DISPATCH SERVICE ====================
+  dispatch-service:
+    build: ../dispatch-service
+    container_name: rescue-dispatch-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/db_dispatch
+      DB_USERNAME: rescueuser
+      DB_PASSWORD: rescuepassword
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redispassword
+    depends_on:
+      mysql: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== RESOURCE SERVICE ====================
+  resource-service:
+    build: ../resource-service
+    container_name: rescue-resource-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/db_resource
+      DB_USERNAME: rescueuser
+      DB_PASSWORD: rescuepassword
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
+    depends_on:
+      mysql: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== NOTIFICATION SERVICE ====================
+  notification-service:
+    build: ../notification-service
+    container_name: rescue-notification-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/db_notification
+      DB_USERNAME: rescueuser
+      DB_PASSWORD: rescuepassword
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
+    depends_on:
+      mysql: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==================== REPORT SERVICE ====================
+  report-service:
+    build: ../report-service
+    container_name: rescue-report-service
+    environment:
       DB_REPORT_URL: jdbc:mysql://mysql:3306/db_report
       DB_USERNAME: rescueuser
       DB_PASSWORD: rescuepassword
-      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}  # needed for WebSocket auth
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       REDIS_HOST: redis
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: rescueuser
+      RABBITMQ_PASS: rescuepassword
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 5
