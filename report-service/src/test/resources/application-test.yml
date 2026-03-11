@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    auth:
+      jdbc-url: ${DB_AUTH_URL:jdbc:mysql://localhost:3306/db_auth}
+      username: ${DB_USERNAME:rescueuser}
+      password: ${DB_PASSWORD:rescuepassword}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    request:
+      jdbc-url: ${DB_REQUEST_URL:jdbc:mysql://localhost:3306/db_request}
+      username: ${DB_USERNAME:rescueuser}
+      password: ${DB_PASSWORD:rescuepassword}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    dispatch:
+      jdbc-url: ${DB_DISPATCH_URL:jdbc:mysql://localhost:3306/db_dispatch}
+      username: ${DB_USERNAME:rescueuser}
+      password: ${DB_PASSWORD:rescuepassword}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    resource:
+      jdbc-url: ${DB_RESOURCE_URL:jdbc:mysql://localhost:3306/db_resource}
+      username: ${DB_USERNAME:rescueuser}
+      password: ${DB_PASSWORD:rescuepassword}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    report:
+      jdbc-url: ${DB_REPORT_URL:jdbc:mysql://localhost:3306/db_report}
+      username: ${DB_USERNAME:rescueuser}
+      password: ${DB_PASSWORD:rescuepassword}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:rescueuser}
+    password: ${RABBITMQ_PASS:rescuepassword}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
+  gateway:
+    url: ${GATEWAY_URL:http://localhost:8080}
