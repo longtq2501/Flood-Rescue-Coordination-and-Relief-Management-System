@@ -5,21 +5,45 @@ spring:
   cloud:
     gateway:
       routes:
-        # Auth service routes — order matters, most specific first
+        # Auth service
         - id: auth-service
           uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
 
-        # Backend service routes — catch-all for remaining /api/**
-        - id: backend-service
-          uri: ${BACKEND_SERVICE_URL:http://localhost:8082}
+        # Request service
+        - id: request-service
+          uri: ${REQUEST_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/**
+            - Path=/api/requests/**
+
+        # Dispatch service
+        - id: dispatch-service
+          uri: ${DISPATCH_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/dispatch/**
+
+        # Resource service
+        - id: resource-service
+          uri: ${RESOURCE_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/resources/**
+
+        # Notification service
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/notifications/**
+
+        # Report service
+        - id: report-service
+          uri: ${REPORT_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/reports/**
 
         # WebSocket route
-        - id: backend-websocket
-          uri: ${BACKEND_SERVICE_URL:http://localhost:8082}
+        - id: report-websocket
+          uri: ${REPORT_SERVICE_URL:http://localhost:8086}
           predicates:
             - Path=/ws/**
 

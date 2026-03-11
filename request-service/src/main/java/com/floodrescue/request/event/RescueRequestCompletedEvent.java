@@ -1,6 +1,9 @@
-// DUPLICATED FROM: dispatch-service/.../RescueRequestCompletedEvent.java
-// IF YOU CHANGE THIS, ALSO UPDATE: dispatch-service, backend (report module)
-// ROUTING KEY: rescue.request.completed — DO NOT CHANGE
+/**
+ * DUPLICATED CLASS - TECHNICAL DEBT
+ * Source of Truth: dispatch-service
+ * Purpose: Local DTO for AMQP message consumption.
+ * Syncing: Must be updated manually when the source class changes.
+ */
 package com.floodrescue.request.event;
 
 import java.time.LocalDateTime;
