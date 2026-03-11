@@ -37,10 +37,12 @@ public class RabbitMQConfig {
     public static final String RK_REQUEST_CREATED = "rescue.request.created";
     public static final String RK_REQUEST_STATUS = "rescue.request.status.updated";
     public static final String RK_REQUEST_ASSIGNED = "rescue.request.assigned";
+    public static final String RK_REQUEST_STARTED = "rescue.request.started";
     public static final String RK_REQUEST_COMPLETED = "rescue.request.completed";
 
     // ==================== QUEUE NAMES ====================
     public static final String Q_REQUEST_SYNC_ASSIGNED = "q.request.sync.assigned";
+    public static final String Q_REQUEST_SYNC_STARTED = "q.request.sync.started";
     public static final String Q_REQUEST_SYNC_COMPLETED = "q.request.sync.completed";
     public static final String Q_DLQ = "q.dlq.all";
 
@@ -75,6 +77,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue qRequestSyncStarted() {
+        return durableQueue(Q_REQUEST_SYNC_STARTED);
+    }
+
+    @Bean
     public Queue qRequestSyncCompleted() {
         return durableQueue(Q_REQUEST_SYNC_COMPLETED);
     }
@@ -89,6 +96,12 @@ public class RabbitMQConfig {
     public Binding bindRequestSyncAssigned() {
         return BindingBuilder.bind(qRequestSyncAssigned())
                 .to(rescueExchange()).with(RK_REQUEST_ASSIGNED);
+    }
+
+    @Bean
+    public Binding bindRequestSyncStarted() {
+        return BindingBuilder.bind(qRequestSyncStarted())
+                .to(rescueExchange()).with(RK_REQUEST_STARTED);
     }
 
     @Bean

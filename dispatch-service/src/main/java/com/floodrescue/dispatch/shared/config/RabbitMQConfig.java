@@ -17,6 +17,7 @@ public class RabbitMQConfig {
     
     // Routing Keys (Produced)
     public static final String RK_REQUEST_ASSIGNED = "rescue.request.assigned";
+    public static final String RK_REQUEST_STARTED = "rescue.request.started";
     public static final String RK_REQUEST_COMPLETED = "rescue.request.completed";
     public static final String RK_TEAM_LOCATION = "rescue.team.location";
 

@@ -60,11 +60,13 @@ services:
     build: ../request-service
     container_name: rescue-request-service
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/db_request
+      DB_REQUEST_URL: jdbc:mysql://mysql:3306/db_request
       DB_USERNAME: rescueuser
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: rescueuser
+      RABBITMQ_PASS: rescuepassword
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: rescueaccess
       MINIO_SECRET_KEY: rescuesecret
@@ -88,6 +90,10 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redispassword
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -108,6 +114,8 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -128,6 +136,8 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: rescueuser
+      RABBITMQ_PASSWORD: rescuepassword
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -143,12 +153,14 @@ services:
     build: ../report-service
     container_name: rescue-report-service
     environment:
-      # Port will be updated to 8086 in application.yml later
+      DB_REPORT_URL: jdbc:mysql://mysql:3306/db_report
       DB_USERNAME: rescueuser
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       REDIS_HOST: redis
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: rescueuser
+      RABBITMQ_PASS: rescuepassword
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }

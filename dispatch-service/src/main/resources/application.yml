@@ -24,6 +24,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: false
 
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}

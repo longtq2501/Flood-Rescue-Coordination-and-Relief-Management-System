@@ -104,4 +104,9 @@ public class DispatchController {
         return ResponseEntity.ok(
                 ApiResponse.success(dispatchService.getMapData(), "OK"));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> health() {
+        return ResponseEntity.ok(ApiResponse.success("Dispatch Service is UP", "OK"));
+    }
 }

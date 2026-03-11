@@ -66,4 +66,9 @@ public class AuthController {
         authService.changePassword(principal.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công", null));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> health() {
+        return ResponseEntity.ok(ApiResponse.success("Auth Service is UP", "OK"));
+    }
 }

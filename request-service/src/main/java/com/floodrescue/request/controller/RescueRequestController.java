@@ -102,4 +102,9 @@ public class RescueRequestController {
         return ResponseEntity.ok(ApiResponse.success("Xác nhận thành công",
                         requestService.confirm(id, principal.getId())));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> health() {
+        return ResponseEntity.ok(ApiResponse.success("Request Service is UP", "OK"));
+    }
 }

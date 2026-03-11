@@ -8,6 +8,7 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -23,10 +24,12 @@ import javax.sql.DataSource;
 )
 public class ReportDataSourceConfig {
 
+    @Primary
     @Bean(name = "reportDataSource")
     @ConfigurationProperties("spring.datasource.report")
     public DataSource dataSource() { return DataSourceBuilder.create().build(); }
 
+    @Primary
     @Bean(name = "reportEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
             @Qualifier("reportDataSource") DataSource ds,
@@ -36,6 +39,7 @@ public class ReportDataSourceConfig {
                 .build();
     }
 
+    @Primary
     @Bean(name = "reportTransactionManager")
     public PlatformTransactionManager transactionManager(
             @Qualifier("reportEntityManagerFactory") EntityManagerFactory emf) {
