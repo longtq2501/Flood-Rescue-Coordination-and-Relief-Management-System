@@ -2,6 +2,8 @@ package com.floodrescue.resource.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -76,7 +78,7 @@ public class DistributionServiceImpl implements DistributionService {
                     .map(item -> item.getWarehouse().getId())
                     .distinct()
                     .toList();
-            
+
             eventPublisher.publishDistributed(ResourceDistributedEvent.builder()
                     .distributionId(savedDistribution.getId())
                     .requestId(savedDistribution.getRequestId())
@@ -105,13 +107,26 @@ public class DistributionServiceImpl implements DistributionService {
     @Override
     @Transactional(readOnly = true)
     public Page<DistributionResponse> getAll(Pageable pageable) {
-        return distributionRepository.findAll(pageable).map(this::toResponse);
+        Page<Distribution> page = distributionRepository.findAll(pageable);
+        List<Distribution> withItems = distributionRepository.fetchWithItems(page.getContent());
+
+        // Map withItems vào page content
+        Map<Long, Distribution> itemsMap = withItems.stream()
+                .collect(Collectors.toMap(Distribution::getId, d -> d));
+
+        return page.map(d -> toResponse(itemsMap.getOrDefault(d.getId(), d)));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<DistributionResponse> getByRequestId(Long requestId, Pageable pageable) {
-        return distributionRepository.findByRequestId(requestId, pageable).map(this::toResponse);
+        Page<Distribution> page = distributionRepository.findByRequestId(requestId, pageable);
+        List<Distribution> withItems = distributionRepository.fetchWithItems(page.getContent());
+
+        Map<Long, Distribution> itemsMap = withItems.stream()
+                .collect(Collectors.toMap(Distribution::getId, d -> d));
+
+        return page.map(d -> toResponse(itemsMap.getOrDefault(d.getId(), d)));
     }
 
     private DistributionResponse toResponse(Distribution distribution) {
