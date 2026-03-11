@@ -2,9 +2,9 @@ package com.floodrescue.dispatch.shared.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String EXCHANGE = "rescue.events";
-    
+
     // Routing Keys (Produced)
     public static final String RK_REQUEST_ASSIGNED = "rescue.request.assigned";
     public static final String RK_REQUEST_STARTED = "rescue.request.started";
@@ -28,8 +28,8 @@ public class RabbitMQConfig {
     public static final String Q_LOCATION = "q.dispatch.location";
 
     @Bean
-    public DirectExchange exchange() {
-        return new DirectExchange(EXCHANGE);
+    public TopicExchange exchange() {
+        return new TopicExchange(EXCHANGE);
     }
 
     @Bean
@@ -41,7 +41,7 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding locationBinding(Queue locationQueue, DirectExchange exchange) {
+    public Binding locationBinding(Queue locationQueue, TopicExchange exchange) {
         return BindingBuilder.bind(locationQueue).to(exchange).with(RK_LOCATION);
     }
 
