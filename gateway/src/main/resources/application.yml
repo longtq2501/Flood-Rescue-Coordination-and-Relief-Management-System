@@ -39,7 +39,7 @@ spring:
         - id: report-service
           uri: ${REPORT_SERVICE_URL:http://localhost:8086}
           predicates:
-            - Path=/api/v1/reports/**
+            - Path=/api/reports/**
 
         # WebSocket route
         - id: report-websocket
@@ -81,6 +81,12 @@ app:
     - /api/auth/register
     - /api/auth/login
     - /api/auth/refresh
+    - /api/auth/health
+    - /api/requests/health
+    - /api/dispatch/health
+    - /api/resources/health
+    - /api/notifications/health
+    - /api/reports/health
     - /actuator/health
 
 management:

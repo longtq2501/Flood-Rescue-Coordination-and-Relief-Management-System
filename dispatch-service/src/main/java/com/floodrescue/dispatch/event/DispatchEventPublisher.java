@@ -29,6 +29,17 @@ public class DispatchEventPublisher {
         log.info("Published rescue.request.assigned: requestId={}", event.getRequestId());
     }
 
+    public void publishRequestStarted(RescueRequestStartedEvent event) {
+        event.setEventId(UUID.randomUUID().toString());
+        event.setEventType(RabbitMQConfig.RK_REQUEST_STARTED);
+        event.setTimestamp(LocalDateTime.now());
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                RabbitMQConfig.RK_REQUEST_STARTED,
+                event);
+        log.info("Published rescue.request.started: requestId={}", event.getRequestId());
+    }
+
     public void publishRequestCompleted(RescueRequestCompletedEvent event) {
         event.setEventId(UUID.randomUUID().toString());
         event.setEventType(RabbitMQConfig.RK_REQUEST_COMPLETED);

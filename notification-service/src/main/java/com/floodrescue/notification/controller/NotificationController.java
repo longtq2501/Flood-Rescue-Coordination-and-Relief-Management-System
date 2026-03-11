@@ -52,4 +52,9 @@ public class NotificationController {
 
         return ResponseEntity.ok(ApiResponse.success(responsePage, "Lấy lịch sử thông báo thành công"));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> health() {
+        return ResponseEntity.ok(ApiResponse.success("Notification Service is UP", "OK"));
+    }
 }

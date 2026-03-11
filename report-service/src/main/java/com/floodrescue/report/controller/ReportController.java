@@ -23,4 +23,9 @@ public class ReportController {
         return ResponseEntity.ok(ApiResponse.success("OK",
                 reportService.getDashboard()));
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponse<String>> health() {
+        return ResponseEntity.ok(ApiResponse.success("Report Service is UP", "OK"));
+    }
 }

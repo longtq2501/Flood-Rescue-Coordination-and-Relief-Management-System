@@ -25,6 +25,7 @@ import com.floodrescue.dispatch.dto.response.RescueTeamResponse;
 import com.floodrescue.dispatch.dto.response.TeamMemberResponse;
 import com.floodrescue.dispatch.event.DispatchEventPublisher;
 import com.floodrescue.dispatch.event.RescueRequestAssignedEvent;
+import com.floodrescue.dispatch.event.RescueRequestStartedEvent;
 import com.floodrescue.dispatch.event.RescueRequestCompletedEvent;
 import com.floodrescue.dispatch.event.TeamLocationUpdatedEvent;
 import com.floodrescue.dispatch.repository.AssignmentRepository;
@@ -161,6 +162,14 @@ public class DispatchServiceImpl implements DispatchService {
         assignment.setStartedAt(LocalDateTime.now());
         assignment = assignmentRepository.save(assignment);
 
+        RescueRequestStartedEvent event = RescueRequestStartedEvent.builder()
+                .requestId(assignment.getRequestId())
+                .teamId(team.getId())
+                .operatorId(userId)
+                .startedAt(assignment.getStartedAt())
+                .build();
+        eventPublisher.publishRequestStarted(event);
+
         return toAssignmentResponse(assignment);
     }
 
@@ -193,6 +202,7 @@ public class DispatchServiceImpl implements DispatchService {
                 .requestId(assignment.getRequestId())
                 .teamId(team.getId())
                 .citizenId(assignment.getCitizenId())
+                .operatorId(userId)
                 .completedAt(assignment.getCompletedAt())
                 .durationMinutes(durationMinutes)
                 .result(resultNote)

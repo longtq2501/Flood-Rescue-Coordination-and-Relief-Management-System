@@ -1,12 +1,12 @@
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN apk add --no-cache maven && mvn clean package -DskipTests -q
+RUN mvn clean package -DskipTests -q
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8082
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8082/actuator/health || exit 1
+EXPOSE 8086
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8086/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]

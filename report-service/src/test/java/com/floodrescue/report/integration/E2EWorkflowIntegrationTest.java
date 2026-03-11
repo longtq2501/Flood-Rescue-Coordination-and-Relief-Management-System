@@ -15,14 +15,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.time.Duration;
 
 /**
  * E2E Integration Test - Refactored for Microservices Architecture.
@@ -37,6 +41,11 @@ public class E2EWorkflowIntegrationTest {
 
     @Autowired
     private WebTestClient webTestClient;
+
+    @Value("${app.gateway.url:http://localhost:8080}")
+    private String gatewayUrl;
+
+    private WebTestClient gatewayClient;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -88,6 +97,11 @@ public class E2EWorkflowIntegrationTest {
 
     @BeforeEach
     public void setup() throws Exception {
+        this.gatewayClient = WebTestClient.bindToServer()
+                .baseUrl(gatewayUrl)
+                .responseTimeout(Duration.ofSeconds(30))
+                .build();
+        
         cleanDatabase();
 
         long timestamp = System.currentTimeMillis() % 10000000;
@@ -149,7 +163,7 @@ public class E2EWorkflowIntegrationTest {
         payload.put("password", password);
         payload.put("role", role);
 
-        webTestClient.post()
+        gatewayClient.post()
                 .uri("/api/auth/register")
                 .bodyValue(payload)
                 .exchange()
@@ -161,7 +175,7 @@ public class E2EWorkflowIntegrationTest {
         loginPayload.put("phone", phone);
         loginPayload.put("password", password);
 
-        Map response = webTestClient.post()
+        Map response = gatewayClient.post()
                 .uri("/api/auth/login")
                 .bodyValue(loginPayload)
                 .exchange()
@@ -182,10 +196,13 @@ public class E2EWorkflowIntegrationTest {
         requestDto.put("description", "Bi ket tren mai, 3 nguoi lon 1 tre em");
         requestDto.put("numPeople", 4);
 
-        Map response = webTestClient.post()
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("data", requestDto, MediaType.APPLICATION_JSON);
+
+        Map response = gatewayClient.post()
                 .uri("/api/requests")
                 .header("Authorization", "Bearer " + citizenToken)
-                .bodyValue(requestDto)
+                .bodyValue(builder.build())
                 .exchange()
                 .expectStatus().isCreated()
                 .expectBody(Map.class)
@@ -201,7 +218,7 @@ public class E2EWorkflowIntegrationTest {
         verifyDto.put("urgencyLevel", "HIGH");
         verifyDto.put("note", "Da xac minh, can ho tro gap");
 
-        webTestClient.patch()
+        gatewayClient.patch()
                 .uri("/api/requests/" + requestId + "/verify")
                 .header("Authorization", "Bearer " + coordinatorToken)
                 .bodyValue(verifyDto)
@@ -239,12 +256,12 @@ public class E2EWorkflowIntegrationTest {
     @Order(1)
     @DisplayName("Health Check: Services are routed via Gateway")
     public void testGatewayRouting() {
-        webTestClient.get().uri("/api/auth/health").exchange().expectStatus().isOk();
-        webTestClient.get().uri("/api/requests/health").exchange().expectStatus().isOk();
-        webTestClient.get().uri("/api/dispatch/health").exchange().expectStatus().isOk();
-        webTestClient.get().uri("/api/resources/health").exchange().expectStatus().isOk();
-        webTestClient.get().uri("/api/notifications/health").exchange().expectStatus().isOk();
-        webTestClient.get().uri("/api/reports/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/auth/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/requests/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/dispatch/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/resources/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/notifications/health").exchange().expectStatus().isOk();
+        gatewayClient.get().uri("/api/reports/health").exchange().expectStatus().isOk();
     }
 
     @Test
@@ -267,7 +284,7 @@ public class E2EWorkflowIntegrationTest {
         assignPayload.put("vehicleId", vehicleId);
         assignPayload.put("citizenId", citizenUserId);
 
-        webTestClient.post()
+        gatewayClient.post()
                 .uri("/api/dispatch/assign")
                 .header("Authorization", "Bearer " + coordinatorToken)
                 .bodyValue(assignPayload)
@@ -280,20 +297,38 @@ public class E2EWorkflowIntegrationTest {
         JdbcTemplate dispatchJdbc = new JdbcTemplate(dispatchDataSource);
         Long assignmentId = dispatchJdbc.queryForObject("SELECT id FROM assignments WHERE request_id = ?", Long.class, reqId);
 
-        webTestClient.patch()
+        gatewayClient.patch()
                 .uri("/api/dispatch/assignments/" + assignmentId + "/start")
                 .header("Authorization", "Bearer " + teamToken)
                 .exchange()
                 .expectStatus().isOk();
 
         // 5. Team completes mission
-        webTestClient.patch()
-                .uri("/api/dispatch/assignments/" + assignmentId + "/complete")
+        gatewayClient.patch()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/dispatch/assignments/" + assignmentId + "/complete")
+                        .queryParam("resultNote", "Mission accomplished")
+                        .build())
                 .header("Authorization", "Bearer " + teamToken)
-                .attribute("resultNote", "Mission accomplished")
                 .exchange()
                 .expectStatus().isOk();
         
-        System.out.println("=== PASS: Full rescue workflow ===");
+        // 6. Final state verification across services
+        // Verify Request status is COMPLETED
+        JdbcTemplate requestJdbc = new JdbcTemplate(requestDataSource);
+        String finalReqStatus = requestJdbc.queryForObject("SELECT status FROM rescue_requests WHERE id = ?", String.class, reqId);
+        org.junit.jupiter.api.Assertions.assertEquals("COMPLETED", finalReqStatus);
+
+        // Verify Team status is AVAILABLE
+        JdbcTemplate dispatchJdbcResult = new JdbcTemplate(dispatchDataSource);
+        String finalTeamStatus = dispatchJdbcResult.queryForObject("SELECT status FROM rescue_teams WHERE id = ?", String.class, teamId);
+        org.junit.jupiter.api.Assertions.assertEquals("AVAILABLE", finalTeamStatus);
+
+        // Verify Vehicle status is AVAILABLE
+        JdbcTemplate resourceJdbc = new JdbcTemplate(resourceDataSource);
+        String finalVehicleStatus = resourceJdbc.queryForObject("SELECT status FROM vehicles WHERE id = ?", String.class, vehicleId);
+        org.junit.jupiter.api.Assertions.assertEquals("AVAILABLE", finalVehicleStatus);
+
+        System.out.println("=== PASS: Full rescue workflow verified across microservices ===");
     }
 }

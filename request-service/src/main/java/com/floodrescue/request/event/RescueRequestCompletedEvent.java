@@ -25,6 +25,7 @@ public class RescueRequestCompletedEvent {
     private Long requestId;
     private Long teamId;
     private Long citizenId;
+    private Long operatorId;
     private LocalDateTime completedAt;
     private Integer durationMinutes;
     private String result;

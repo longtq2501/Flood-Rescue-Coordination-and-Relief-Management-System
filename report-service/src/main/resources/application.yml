@@ -16,9 +16,11 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: false
 
   data:
     redis:
