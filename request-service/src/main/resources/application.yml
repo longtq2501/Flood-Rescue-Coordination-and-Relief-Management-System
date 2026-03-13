@@ -1,4 +1,6 @@
 spring:
+  main:
+    banner-mode: off
   datasource:
     url: ${DB_REQUEST_URL:jdbc:mysql://localhost:3306/db_request}
     username: ${DB_USERNAME:rescueuser}
@@ -11,7 +13,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   flyway:
     enabled: true

@@ -2,6 +2,8 @@ server:
   port: 8083
 
 spring:
+  main:
+    banner-mode: off
   application:
     name: dispatch-service
   
@@ -14,10 +16,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
         open-in-view: false
 

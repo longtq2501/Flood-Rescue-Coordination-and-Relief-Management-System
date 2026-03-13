@@ -2,6 +2,8 @@ server:
   port: 8085
 
 spring:
+  main:
+    banner-mode: off
   application:
     name: notification-service
   
@@ -17,7 +19,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         open-in-view: false
 
   flyway:
