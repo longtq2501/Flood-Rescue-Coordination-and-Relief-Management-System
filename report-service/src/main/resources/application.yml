@@ -52,6 +52,12 @@ server:
   port: 8086
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0  # thêm dòng này - sample 100% requests
   health:
     rabbit:
       enabled: false
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}

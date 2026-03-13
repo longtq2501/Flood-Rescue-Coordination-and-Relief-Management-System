@@ -5,6 +5,19 @@ include:
 
 services:
 
+  # ==================== ZIPKIN (Tracing) ====================
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: rescue-zipkin
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:9411/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   # ==================== API GATEWAY (Entry Point) ====================
   gateway:
     build: ../gateway
@@ -35,7 +48,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -53,7 +66,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
@@ -78,7 +91,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== DISPATCH SERVICE ====================
   dispatch-service:
@@ -102,7 +115,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== RESOURCE SERVICE ====================
   resource-service:
@@ -124,7 +137,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -146,7 +159,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== REPORT SERVICE ====================
   report-service:
@@ -161,16 +174,18 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: rescueuser
       RABBITMQ_PASS: rescuepassword
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans  # thêm dòng này
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+      zipkin: { condition: service_healthy }  # thêm dòng này
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 180s
 
   # ==================== FRONTEND ====================
   frontend:
