@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/shared/utils/utils"
+import { cn } from "@/shared/utils"
 import * as React from "react"
 
 
