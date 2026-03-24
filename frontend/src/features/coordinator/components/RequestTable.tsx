@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Request, Urgency, RequestStatus } from '../types';
 import { URGENCY_COLORS, URGENCY_LABELS, REQUEST_STATUS } from '../constants';
 import { Input } from '@/shared/components/ui/input';
@@ -25,23 +25,28 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<Urgency | 'all'>('all');
+  const [formattedDates, setFormattedDates] = useState<Record<string, string>>({});
 
-  // Lọc requests
+  useEffect(() => {
+    const dates: Record<string, string> = {};
+    requests.forEach(req => {
+      dates[req.id] = new Date(req.createdAt).toLocaleString('vi-VN');
+    });
+    setFormattedDates(dates);
+  }, [requests]);
+
   const filteredRequests = requests.filter((req) => {
     const matchesSearch =
       req.title.toLowerCase().includes(search.toLowerCase()) ||
       req.customerName.toLowerCase().includes(search.toLowerCase()) ||
       req.location.toLowerCase().includes(search.toLowerCase());
-
     const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
     const matchesUrgency = urgencyFilter === 'all' || req.urgency === urgencyFilter;
-
     return matchesSearch && matchesStatus && matchesUrgency;
   });
 
   return (
     <div className="space-y-4">
-      {/* Filter bar */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -52,7 +57,6 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
             className="pl-8"
           />
         </div>
-
         <Select
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as RequestStatus | 'all')}
@@ -63,13 +67,10 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
           <SelectContent>
             <SelectItem value="all">Tất cả trạng thái</SelectItem>
             {Object.entries(REQUEST_STATUS).map(([key, label]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
+              <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-
         <Select
           value={urgencyFilter}
           onValueChange={(value) => setUrgencyFilter(value as Urgency | 'all')}
@@ -80,15 +81,12 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
           <SelectContent>
             <SelectItem value="all">Tất cả mức độ</SelectItem>
             {Object.entries(URGENCY_LABELS).map(([key, label]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
+              <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Bảng requests */}
       <div className="rounded-md border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
@@ -127,14 +125,10 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
                     <Badge variant="outline">{REQUEST_STATUS[request.status]}</Badge>
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">
-                    {new Date(request.createdAt).toLocaleString('vi-VN')}
+                    {formattedDates[request.id] || ''}
                   </td>
                   <td className="py-3 px-4 space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onVerify(request.id)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => onVerify(request.id)}>
                       <Eye className="h-4 w-4 mr-1" />
                       Verify
                     </Button>
