@@ -117,8 +117,10 @@ public class JwtValidationFilter implements GlobalFilter, Ordered {
         return -1; // Run before other filters
     }
 
+    private final org.springframework.util.AntPathMatcher pathMatcher = new org.springframework.util.AntPathMatcher();
+
     private boolean isPublicPath(String path) {
-        return publicPaths.stream().anyMatch(path::equals);
+        return publicPaths.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange) {

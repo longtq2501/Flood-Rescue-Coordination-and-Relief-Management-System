@@ -21,15 +21,23 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    private static final String[] PUBLIC_URLS = {
+        "/api/notifications/v3/api-docs/**",
+        "/api/notifications/swagger-ui/**",
+        "/api/notifications/swagger-ui.html",
+        "/api/notifications/health",
+        "/actuator/health"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/notifications/health").permitAll()
+                .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers("/api/notifications/**").authenticated()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

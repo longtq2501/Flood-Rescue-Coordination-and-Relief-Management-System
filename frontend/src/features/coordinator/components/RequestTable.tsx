@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Request, Urgency, RequestStatus } from '../types';
 import { URGENCY_COLORS, URGENCY_LABELS, REQUEST_STATUS } from '../constants';
 import { Input } from '@/shared/components/ui/input';
@@ -25,14 +25,12 @@ export function RequestTable({ requests, onVerify, onOpenAssign }: RequestTableP
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<Urgency | 'all'>('all');
-  const [formattedDates, setFormattedDates] = useState<Record<string, string>>({});
-
-  useEffect(() => {
+  const formattedDates = useMemo(() => {
     const dates: Record<string, string> = {};
     requests.forEach(req => {
       dates[req.id] = new Date(req.createdAt).toLocaleString('vi-VN');
     });
-    setFormattedDates(dates);
+    return dates;
   }, [requests]);
 
   const filteredRequests = requests.filter((req) => {

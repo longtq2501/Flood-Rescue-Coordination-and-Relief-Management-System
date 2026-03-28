@@ -27,6 +27,13 @@ export interface Team {
   currentAssignment?: string;
 }
 
+export interface Vehicle {
+  id: string;
+  name: string;
+  plate: string;
+  status: 'AVAILABLE' | 'BUSY' | 'MAINTENANCE';
+}
+
 export interface Assignment {
   id: string;
   requestId: string;

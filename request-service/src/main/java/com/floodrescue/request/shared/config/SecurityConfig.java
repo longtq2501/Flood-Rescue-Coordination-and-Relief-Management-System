@@ -22,6 +22,9 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
 
     private static final String[] PUBLIC_URLS = {
+        "/api/requests/v3/api-docs/**",
+        "/api/requests/swagger-ui/**",
+        "/api/requests/swagger-ui.html",
         "/api/requests/health",
         "/actuator/health"
     };

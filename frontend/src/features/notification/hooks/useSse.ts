@@ -12,9 +12,10 @@ type SseHandler = (event: SseEvent) => void;
 export const useSse = (onEvent: SseHandler) => {
     const { isAuthenticated } = useAuthStore();
     const eventSourceRef = useRef<EventSource | null>(null);
-    const token = localStorage.getItem('accessToken');
+    const connectRef = useRef<() => void>(() => {});
 
     const connect = useCallback(() => {
+        const token = localStorage.getItem('accessToken');
         if (!isAuthenticated || !token) return;
 
         // SSE không support custom header nên truyền token qua query param
@@ -44,9 +45,13 @@ export const useSse = (onEvent: SseHandler) => {
             console.warn('SSE error, reconnecting in 5s...');
             es.close();
             // Auto reconnect sau 5 giây
-            setTimeout(connect, 5000);
+            setTimeout(() => connectRef.current(), 5000);
         };
-    }, [isAuthenticated, token, onEvent]);
+    }, [isAuthenticated, onEvent]);
+
+    useEffect(() => {
+        connectRef.current = connect;
+    }, [connect]);
 
     useEffect(() => {
         connect();

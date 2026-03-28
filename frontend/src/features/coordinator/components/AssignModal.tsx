@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Button } from '@/shared/components/ui/button';
-import { Request, Team } from '../types';
+import { Request, Team, Vehicle } from '../types';
 
 interface AssignModalProps {
   open: boolean;
@@ -26,7 +26,7 @@ interface AssignModalProps {
 
 export function AssignModal({ open, onOpenChange, request, onAssign }: AssignModalProps) {
   const [teams, setTeams] = useState<Team[]>([]);
-  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [loading, setLoading] = useState(false);

@@ -1,12 +1,15 @@
 server:
   port: 8085
 
+springdoc:
+  api-docs:
+    path: /api/notifications/v3/api-docs
+
 spring:
   main:
     banner-mode: off
   application:
     name: notification-service
-  
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/db_notification}
     username: ${DB_USERNAME:root}

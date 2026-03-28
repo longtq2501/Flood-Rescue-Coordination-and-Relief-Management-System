@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { TeamMap } from '@/features/coordinator/components/TeamMap';
+import dynamic from 'next/dynamic';
+const TeamMap = dynamic(() => import('@/features/coordinator/components/TeamMap').then(mod => mod.TeamMap), {
+  ssr: false,
+  loading: () => <div className="w-full h-[600px] bg-gray-100 animate-pulse rounded-lg flex items-center justify-center text-gray-500">Đang tải bản đồ...</div>
+});
 import { Team } from '@/features/coordinator/types';
 
 const MOCK_TEAMS: Team[] = [

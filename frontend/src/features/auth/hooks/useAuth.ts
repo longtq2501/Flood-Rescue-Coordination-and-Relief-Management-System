@@ -10,7 +10,7 @@ import { ROLES } from '@/constants/roles';
 export const useAuth = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { user, isAuthenticated, setAuth, setUser, clearAuth } = useAuthStore();
+    const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore();
 
     // Login mutation
     const loginMutation = useMutation({

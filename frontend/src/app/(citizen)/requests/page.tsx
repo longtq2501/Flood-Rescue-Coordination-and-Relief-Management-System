@@ -2,7 +2,6 @@
 
 import { useCitizenRequests } from '@/features/citizen/hooks/useCitizenRequests';
 import { RequestCard } from '@/features/citizen/components/RequestCard';
-import { RequestStatusBadge } from '@/features/citizen/components/RequestStatusBadge';
 import { Button } from '@/shared/components/ui/button';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -51,21 +50,7 @@ export default function RequestsPage() {
       ) : (
         <div className="space-y-4">
           {filteredRequests.map(req => (
-            <div key={req.id} className="border rounded-lg p-4 hover:shadow transition">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-lg">{req.title}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{req.location.address}</p>
-                  <p className="text-gray-500 text-sm mt-2 line-clamp-2">{req.description}</p>
-                </div>
-                <RequestStatusBadge status={req.status} />
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button variant="outline" asChild>
-                  <Link href={`/requests/${req.id}`}>Xem chi tiết</Link>
-                </Button>
-              </div>
-            </div>
+            <RequestCard key={req.id} request={req} />
           ))}
         </div>
       )}

@@ -1,6 +1,10 @@
 server:
   port: 8084
 
+springdoc:
+  api-docs:
+    path: /api/resources/v3/api-docs
+
 spring:
   main:
     banner-mode: off

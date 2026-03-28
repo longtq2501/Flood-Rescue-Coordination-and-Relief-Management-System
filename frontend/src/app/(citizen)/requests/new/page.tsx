@@ -10,6 +10,7 @@ import { Label } from '@/shared/components/ui/label';
 import { useFileUpload } from '@/features/citizen/hooks/useFileUpload';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const createRequestSchema = z.object({
   title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự'),
@@ -43,7 +44,7 @@ export default function NewRequestPage() {
       console.log({ ...data, files });
       toast.success('Yêu cầu đã được gửi!');
       router.push('/requests');
-    } catch (error) {
+    } catch (err) {
       toast.error('Gửi yêu cầu thất bại, vui lòng thử lại.');
     }
   };
@@ -108,7 +109,7 @@ export default function NewRequestPage() {
           <div className="flex flex-wrap gap-2 mt-2">
             {previews.map((src, idx) => (
               <div key={idx} className="relative w-20 h-20 border rounded">
-                <img src={src} alt="preview" className="w-full h-full object-cover rounded" />
+                <Image src={src} alt="preview" fill className="object-cover rounded" />
                 <button
                   type="button"
                   onClick={() => removeFile(idx)}
