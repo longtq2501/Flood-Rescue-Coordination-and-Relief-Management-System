@@ -74,12 +74,36 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:redispassword}
 
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /api/auth/v3/api-docs
+      - name: Request Service
+        url: /api/requests/v3/api-docs
+      - name: Dispatch Service
+        url: /api/dispatch/v3/api-docs
+      - name: Resource Service
+        url: /api/resources/v3/api-docs
+      - name: Notification Service
+        url: /api/notifications/v3/api-docs
+      - name: Report Service
+        url: /api/reports/v3/api-docs
+
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
-
   # Public endpoints that skip JWT validation
   public-paths:
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /swagger-ui.html
+    - /api/auth/v3/api-docs
+    - /api/requests/v3/api-docs
+    - /api/dispatch/v3/api-docs
+    - /api/resources/v3/api-docs
+    - /api/notifications/v3/api-docs
+    - /api/reports/v3/api-docs
     - /api/auth/register
     - /api/auth/login
     - /api/auth/refresh

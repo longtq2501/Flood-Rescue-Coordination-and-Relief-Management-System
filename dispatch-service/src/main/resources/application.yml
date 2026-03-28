@@ -1,12 +1,15 @@
 server:
   port: 8083
 
+springdoc:
+  api-docs:
+    path: /api/dispatch/v3/api-docs
+
 spring:
   main:
     banner-mode: off
   application:
     name: dispatch-service
-  
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/db_dispatch?createDatabaseIfNotExist=true}
     username: ${DB_USERNAME:root}

@@ -13,9 +13,9 @@ services:
       - "9411:9411"
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:9411/health" ]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
       start_period: 30s
 
   # ==================== API GATEWAY (Entry Point) ====================
@@ -36,11 +36,11 @@ services:
       REDIS_PASSWORD: redispassword
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx128m -Xms64m -XX:MaxMetaspaceSize=64m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 200M
+          memory: 400M
     depends_on:
       auth-service: { condition: service_healthy }
       request-service: { condition: service_healthy }
@@ -51,10 +51,10 @@ services:
       redis: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 90s
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -66,19 +66,19 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
@@ -96,20 +96,20 @@ services:
       MINIO_ACCESS_KEY: rescueaccess
       MINIO_SECRET_KEY: rescuesecret
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== DISPATCH SERVICE ====================
   dispatch-service:
@@ -126,20 +126,20 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redispassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== RESOURCE SERVICE ====================
   resource-service:
@@ -154,20 +154,20 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -182,20 +182,20 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== REPORT SERVICE ====================
   report-service:
@@ -212,11 +212,11 @@ services:
       RABBITMQ_PASS: rescuepassword
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans  # thêm dòng này
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx256m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 800M
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -224,10 +224,10 @@ services:
       zipkin: { condition: service_healthy }  # thêm dòng này
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 60s
 
   # ==================== FRONTEND ====================
   frontend:
