@@ -7,34 +7,29 @@ import { z } from "zod";
 import { toast } from "sonner";
 
 import { createRescueRequest } from "@/features/request/services/request.service";
+import type { CreateRescueRequestPayload } from "@/features/request/types/request.types";
 
-const optionalNumber = z.preprocess((value) => {
-  if (value === "" || value === null || value === undefined) {
-    return undefined;
-  }
+const optionalNumber = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.coerce.number().optional()
+);
 
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? undefined : parsed;
-}, z.number().optional());
+const baseSchema = z.object({
+  lat: optionalNumber,
+  lng: optionalNumber,
+  addressText: z.string().optional(),
+  description: z.string().min(10, "Mo ta toi thieu 10 ky tu"),
+  numPeople: z.coerce.number().int().min(1),
+  urgencyLevel: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+  images: z.custom<FileList | null>().optional(),
+});
 
-const schema = z
-  .object({
-    lat: optionalNumber,
-    lng: optionalNumber,
-    addressText: z.string().optional(),
-    description: z.string().min(10, "Mo ta toi thieu 10 ky tu"),
-    numPeople: z.preprocess((value) => Number(value), z.number().int().min(1)),
-    urgencyLevel: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
-    images: z.any().optional(),
-  })
-  .refine((value) => {
-    const hasGps = value.lat !== undefined && value.lng !== undefined;
-    const hasAddress = Boolean(value.addressText?.trim());
-    return hasGps || hasAddress;
-  }, { message: "Can co GPS hoac dia chi thu cong", path: ["addressText"] });
+const schema = baseSchema.refine((value) => {
+  const hasGps = value.lat !== undefined && value.lng !== undefined;
+  const hasAddress = Boolean(value.addressText?.trim());
+  return hasGps || hasAddress;
+}, { message: "Can co GPS hoac dia chi thu cong", path: ["addressText"] });
 
-type FormInput = z.input<typeof schema>;
-type FormOutput = z.output<typeof schema>;
 
 export function CreateRequestForm() {
   const queryClient = useQueryClient();
@@ -43,12 +38,16 @@ export function CreateRequestForm() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<FormInput, undefined, FormOutput>({
+  } = useForm<CreateRescueRequestPayload>({
     resolver: zodResolver(schema),
     defaultValues: {
+      lat: undefined,
+      lng: undefined,
+      addressText: "",
       description: "",
       urgencyLevel: "HIGH",
       numPeople: 1,
+      images: null,
     },
   });
 

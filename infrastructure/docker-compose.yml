@@ -9,6 +9,15 @@ services:
     container_name: rescue-zipkin
     ports:
       - "9411:9411"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:9411/health" ]
       interval: 10s
@@ -38,7 +47,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 350M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       auth-service: { condition: service_healthy }
       request-service: { condition: service_healthy }
@@ -64,11 +78,16 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
     healthcheck:
@@ -94,11 +113,16 @@ services:
       MINIO_ACCESS_KEY: rescueaccess
       MINIO_SECRET_KEY: rescuesecret
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -124,11 +148,16 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redispassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -152,11 +181,16 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -180,11 +214,16 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -208,18 +247,23 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: rescueuser
       RABBITMQ_PASS: rescuepassword
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans  # thêm dòng này
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      zipkin: { condition: service_healthy }  # thêm dòng này
+      zipkin: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 10s
@@ -236,5 +280,15 @@ services:
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
       NEXT_PUBLIC_SSE_URL: http://localhost:8080/api/notifications/sse
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - gateway
+
