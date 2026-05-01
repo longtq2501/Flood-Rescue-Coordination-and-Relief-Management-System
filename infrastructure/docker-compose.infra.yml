@@ -59,6 +59,8 @@ services:
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     deploy:
       resources:
         limits:
@@ -100,4 +102,5 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  minio_data:
+  minio_data:
+  rabbitmq_data:
