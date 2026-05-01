@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   mysql:
@@ -43,13 +41,12 @@ services:
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI → http://localhost:15672
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 15s
+      retries: 12
+      start_period: 90s
 
   minio:
     image: minio/minio
@@ -67,5 +64,4 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  rabbitmq_data:
   minio_data:

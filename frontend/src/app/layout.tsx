@@ -1,51 +1,29 @@
-// // src/app/layout.tsx
-// import './globals.css';
-// import type { Metadata } from 'next';
-// import { Providers } from '@/shared/components/Providers';
+import type { Metadata } from "next";
+import { Be_Vietnam_Pro } from "next/font/google";
+import "./globals.css";
+import { AppProviders } from "@/components/providers/app-providers";
 
-// export const metadata: Metadata = {
-//     title: {
-//         default: 'Flood Rescue System — Hệ thống cứu hộ lũ lụt',
-//         template: '%s | Flood Rescue System',
-//     },
-//     description: 'Gửi yêu cầu cứu hộ khẩn cấp khi gặp lũ lụt. Hệ thống điều phối cứu hộ thời gian thực.',
-//     keywords: ['cứu hộ lũ lụt', 'khẩn cấp', 'cứu trợ', 'thiên tai', 'flood rescue'],
-//     authors: [{ name: 'Flood Rescue Team' }],
-//     robots: {
-//         index: true,
-//         follow: true,
-//     },
-//     openGraph: {
-//         title: 'Flood Rescue System — Hệ thống cứu hộ lũ lụt',
-//         description: 'Gửi yêu cầu cứu hộ khẩn cấp khi gặp lũ lụt.',
-//         locale: 'vi_VN',
-//         type: 'website',
-//     },
-// };
+const beVietnamPro = Be_Vietnam_Pro({
+  variable: "--font-be-vietnam-pro",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
 
-// export default function RootLayout({
-//     children,
-// }: {
-//     children: React.ReactNode;
-// }) {
-//     return (
-//         <html lang="vi">
-//             <body>
-//                 <Providers>
-//                     {children}
-//                 </Providers>
-//             </body>
-//         </html>
-//     );
-// }
+export const metadata: Metadata = {
+  title: "Flood Rescue Frontend",
+  description: "Operational console for flood rescue coordination",
+};
+
 export default function RootLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <html lang="en">
-            <body>{children}</body>
-        </html>
-    );
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={`${beVietnamPro.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col">
+        <AppProviders>{children}</AppProviders>
+      </body>
+    </html>
+  );
 }

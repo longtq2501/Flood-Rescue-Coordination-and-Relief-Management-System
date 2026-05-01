@@ -1,5 +1,3 @@
-version: '3.9'
-
 include:
   - docker-compose.infra.yml
 
@@ -52,9 +50,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 90s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -76,9 +74,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
@@ -107,9 +105,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== DISPATCH SERVICE ====================
   dispatch-service:
@@ -137,9 +135,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== RESOURCE SERVICE ====================
   resource-service:
@@ -165,9 +163,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -193,9 +191,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== REPORT SERVICE ====================
   report-service:
@@ -225,9 +223,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== FRONTEND ====================
   frontend:
@@ -236,6 +234,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080  # Points to Gateway
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+      NEXT_PUBLIC_SSE_URL: http://localhost:8080/api/notifications/sse
     depends_on:
       - gateway

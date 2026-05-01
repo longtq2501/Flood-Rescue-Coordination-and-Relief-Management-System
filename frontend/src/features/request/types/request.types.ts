@@ -1,55 +1,53 @@
-export type UrgencyLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type UrgencyLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
 export type RequestStatus =
-    | 'PENDING' | 'VERIFIED' | 'ASSIGNED'
-    | 'IN_PROGRESS' | 'COMPLETED' | 'CONFIRMED' | 'CANCELLED';
+  | "PENDING"
+  | "VERIFIED"
+  | "ASSIGNED"
+  | "COMPLETED"
+  | "CONFIRMED"
+  | "CANCELLED";
 
-export interface RescueRequestResponse {
-    id: number;
-    citizenId: number;
-    lat: number;
-    lng: number;
-    addressText?: string;
-    description: string;
-    numPeople: number;
-    urgencyLevel: UrgencyLevel;
-    status: RequestStatus;
-    coordinatorId?: number;
-    imageUrls: string[];
-    statusHistories: StatusHistoryResponse[];
-    verifiedAt?: string;
-    completedAt?: string;
-    confirmedAt?: string;
-    createdAt: string;
-}
+export type RescueRequestSummary = {
+  id: number;
+  lat: number;
+  lng: number;
+  addressText?: string | null;
+  description: string;
+  numPeople: number;
+  urgencyLevel: UrgencyLevel;
+  status: RequestStatus;
+  createdAt: string;
+};
 
-export interface StatusHistoryResponse {
-    fromStatus?: RequestStatus;
+export type RescueRequestDetail = RescueRequestSummary & {
+  citizenId: number;
+  citizenName?: string;
+  citizenPhone?: string;
+  imageUrls?: string[];
+  statusHistory?: Array<{
+    fromStatus: RequestStatus | null;
     toStatus: RequestStatus;
-    changedBy: number;
-    note?: string;
+    changedBy: string;
     changedAt: string;
-}
+  }>;
+};
 
-export interface CreateRescueRequestDto {
-    lat: number;
-    lng: number;
-    addressText?: string;
-    description: string;
-    numPeople?: number;
-}
+export type PageResult<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last?: boolean;
+};
 
-export interface VerifyRequestDto {
-    urgencyLevel?: UrgencyLevel;
-    note?: string;
-}
-
-export interface CancelRequestDto {
-    reason: string;
-}
-
-export interface RequestFilterParams {
-    status?: RequestStatus;
-    urgencyLevel?: UrgencyLevel;
-    fromDate?: string;
-    toDate?: string;
-}
+export type CreateRescueRequestPayload = {
+  lat?: number;
+  lng?: number;
+  addressText?: string;
+  description: string;
+  numPeople: number;
+  urgencyLevel: UrgencyLevel;
+  images?: FileList | null;
+};
