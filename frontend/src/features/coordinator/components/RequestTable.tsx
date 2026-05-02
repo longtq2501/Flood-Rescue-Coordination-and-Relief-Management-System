@@ -62,13 +62,25 @@ export function RequestTable({ requests, onVerify, onOpenAssign, loading, filter
     updateURL();
   }, [search, statusFilter, urgencyFilter]);
 
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      const matchesSearch =
+        req.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        req.addressText?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        req.citizenId.toString().includes(debouncedSearch);
+      const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
+      const matchesUrgency = urgencyFilter === 'all' || req.urgencyLevel === urgencyFilter;
+      return matchesSearch && matchesStatus && matchesUrgency;
+    });
+  }, [requests, debouncedSearch, statusFilter, urgencyFilter]);
+
   const formattedDates = useMemo(() => {
     const dates: Record<number, string> = {};
-    requests.forEach(req => {
+    filteredRequests.forEach(req => {
       dates[req.id] = new Date(req.createdAt).toLocaleString('vi-VN');
     });
     return dates;
-  }, [requests]);
+  }, [filteredRequests]);
 
   return (
     <div className="space-y-4">
@@ -132,14 +144,14 @@ export function RequestTable({ requests, onVerify, onOpenAssign, loading, filter
                   Đang tải...
                 </td>
               </tr>
-            ) : requests.length === 0 ? (
+            ) : filteredRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-muted-foreground">
                   Không có yêu cầu nào
                 </td>
               </tr>
             ) : (
-              requests.map((request) => (
+              filteredRequests.map((request) => (
                 <tr key={request.id} className="border-t hover:bg-muted/50">
                   <td className="py-3 px-4">
                     <Badge className={URGENCY_COLORS[request.urgencyLevel]}>

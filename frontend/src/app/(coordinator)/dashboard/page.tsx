@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { RequestTable } from '@/features/coordinator/components/RequestTable';
 import { AssignModal } from '@/features/coordinator/components/AssignModal';
 import { useRequests } from '@/features/coordinator/hooks/useRequests';
