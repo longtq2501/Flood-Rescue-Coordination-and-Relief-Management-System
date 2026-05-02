@@ -1,0 +1,31 @@
+﻿"use client";
+
+import { Suspense, useState } from "react";
+import { useVehicles } from "@/features/resource/hooks/useVehicles";
+import { VehicleTable } from "@/features/resource/components/VehicleTable";
+
+export default function ResourcesPage() {
+  const [filters, setFilters] = useState({ page: 0, size: 10 });
+
+  const { vehicles, loading, totalElements, totalPages } = useVehicles(filters);
+
+  const handleFiltersChange = (newFilters: any) => {
+    setFilters(newFilters);
+  };
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-8">Quản lý Tài nguyên</h1>
+      <Suspense fallback={<div>Đang tải...</div>}>
+        <VehicleTable
+          vehicles={vehicles}
+          loading={loading}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          totalElements={totalElements}
+          totalPages={totalPages}
+        />
+      </Suspense>
+    </div>
+  );
+}
