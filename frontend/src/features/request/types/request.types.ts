@@ -52,4 +52,5 @@ export interface RequestFilterParams {
     urgencyLevel?: UrgencyLevel;
     fromDate?: string;
     toDate?: string;
+    search?: string;
 }
