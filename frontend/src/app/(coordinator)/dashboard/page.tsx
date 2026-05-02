@@ -1,52 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { RequestTable } from '@/features/coordinator/components/RequestTable';
 import { AssignModal } from '@/features/coordinator/components/AssignModal';
+import { useRequests } from '@/features/coordinator/hooks/useRequests';
 import { Request } from '@/features/coordinator/types';
-
-const MOCK_REQUESTS: Request[] = [
-  {
-    id: '1',
-    title: 'Xe máy chết máy',
-    description: 'Xe không nổ được máy',
-    location: '123 Nguyễn Văn Linh, Quận 7',
-    urgency: 'high',
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    customerName: 'Nguyễn Văn A',
-    customerPhone: '0901234567',
-  },
-  {
-    id: '2',
-    title: 'Tai nạn giao thông',
-    description: 'Xe máy va chạm với ô tô',
-    location: 'Giao lộ Nguyễn Thị Thập - Lê Văn Lương',
-    urgency: 'critical',
-    status: 'assigned',
-    createdAt: new Date().toISOString(),
-    customerName: 'Trần Thị B',
-    customerPhone: '0912345678',
-  },
-  {
-    id: '3',
-    title: 'Hết xăng',
-    description: 'Xe hết xăng giữa đường',
-    location: 'Đường Nguyễn Hữu Thọ, Quận 7',
-    urgency: 'low',
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    customerName: 'Lê Văn C',
-    customerPhone: '0923456789',
-  },
-];
+import { RequestFilterParams } from '@/features/request/types/request.types';
+import { PageParams } from '@/shared/types/api.types';
 
 export default function DashboardPage() {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [filters, setFilters] = useState<RequestFilterParams & PageParams>({ page: 0, size: 10 });
 
-  const handleVerify = (requestId: string) => {
-    alert(`Xác thực yêu cầu ${requestId}`);
+  const { requests, loading, totalElements, totalPages, verifyRequest } = useRequests(filters);
+
+  const handleVerify = (requestId: number) => {
+    verifyRequest(requestId);
   };
 
   const handleOpenAssign = (request: Request) => {
@@ -54,19 +24,30 @@ export default function DashboardPage() {
     setModalOpen(true);
   };
 
-  const handleAssign = async (requestId: string, teamId: string, vehicleId: string) => {
+  const handleAssign = async (requestId: number, teamId: string, vehicleId: string) => {
     console.log('Assign:', { requestId, teamId, vehicleId });
     // TODO: Gọi API assign
+  };
+
+  const handleFiltersChange = (newFilters: RequestFilterParams & PageParams) => {
+    setFilters(newFilters);
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Dashboard Điều phối</h1>
-      <RequestTable
-        requests={MOCK_REQUESTS}
-        onVerify={handleVerify}
-        onOpenAssign={handleOpenAssign}
-      />
+      <Suspense fallback={<div>Đang tải...</div>}>
+        <RequestTable
+          requests={requests}
+          onVerify={handleVerify}
+          onOpenAssign={handleOpenAssign}
+          loading={loading}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          totalElements={totalElements}
+          totalPages={totalPages}
+        />
+      </Suspense>
       <AssignModal
         open={modalOpen}
         onOpenChange={setModalOpen}

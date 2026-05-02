@@ -1,0 +1,37 @@
+﻿import { useState, useEffect } from "react";
+import { resourceApi } from "../api/resourceApi";
+import { VehicleResponse, VehicleStatus, VehicleType } from "../types/resource.types";
+import { PageParams } from "@/shared/types/api.types";
+
+export const useVehicles = (filters: PageParams & { status?: VehicleStatus; type?: VehicleType; search?: string }) => {
+  const [vehicles, setVehicles] = useState<VehicleResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalElements, setTotalElements] = useState(0);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [filters]);
+
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      // Note: API does not support pagination yet, so get all and filter client-side for now
+      const data = await resourceApi.getVehicles(filters.status, filters.type);
+      let filtered = data;
+      if (filters.search) {
+        filtered = data.filter(v =>
+          v.plateNumber.toLowerCase().includes(filters.search!.toLowerCase()) ||
+          v.type.toLowerCase().includes(filters.search!.toLowerCase())
+        );
+      }
+      setVehicles(filtered);
+      setTotalElements(filtered.length);
+    } catch (error) {
+      console.error("Failed to fetch vehicles:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { vehicles, loading, totalElements, totalPages: 1 };
+};

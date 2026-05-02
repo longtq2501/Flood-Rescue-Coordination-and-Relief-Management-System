@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
+import { requestApi } from '@/features/request/api/requestApi';
+import { RequestFilterParams, RescueRequestResponse } from '@/features/request/types/request.types';
+import { PageParams } from '@/shared/types/api.types';
 import { Request } from '../types';
 
-export const useRequests = () => {
-  const [requests, setRequests] = useState<Request[]>([]);
+export const useRequests = (filters: RequestFilterParams & PageParams & { search?: string }) => {
+  const [requests, setRequests] = useState<RescueRequestResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  }, [filters]);
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('/api/requests');
-      const data = await response.json();
-      setRequests(data);
+      setLoading(true);
+      const response = await requestApi.getAll(filters);
+      setRequests(response.content);
+      setTotalElements(response.totalElements);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Failed to fetch requests:', error);
     } finally {
@@ -21,11 +28,11 @@ export const useRequests = () => {
     }
   };
 
-  const verifyRequest = async (requestId: string) => {
+  const verifyRequest = async (requestId: number) => {
     try {
-      await fetch(`/api/requests/${requestId}/verify`, { method: 'POST' });
+      await requestApi.verify(requestId);
       setRequests(prev => prev.map(req => 
-        req.id === requestId ? { ...req, status: 'pending' } : req
+        req.id === requestId ? { ...req, status: 'VERIFIED' as any } : req
       ));
     } catch (error) {
       console.error('Failed to verify request:', error);
@@ -33,19 +40,9 @@ export const useRequests = () => {
   };
 
   const assignTeam = async (requestId: string, teamId: string, vehicleId: string) => {
-    try {
-      await fetch('/api/assignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, teamId, vehicleId })
-      });
-      setRequests(prev => prev.map(req => 
-        req.id === requestId ? { ...req, status: 'assigned' } : req
-      ));
-    } catch (error) {
-      console.error('Failed to assign team:', error);
-    }
+    // TODO: Implement assign API
+    console.log('Assign:', { requestId, teamId, vehicleId });
   };
 
-  return { requests, loading, verifyRequest, assignTeam };
+  return { requests, loading, totalElements, totalPages, verifyRequest, assignTeam, refetch: fetchRequests };
 };

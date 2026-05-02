@@ -1,17 +1,32 @@
-export type Urgency = 'critical' | 'high' | 'medium' | 'low';
-export type RequestStatus = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+export type Urgency = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type RequestStatus = 'PENDING' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CONFIRMED' | 'CANCELLED';
 export type TeamStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
 export interface Request {
-  id: string;
-  title: string;
+  id: number;
+  citizenId: number;
+  lat: number;
+  lng: number;
+  addressText?: string;
   description: string;
-  location: string;
-  urgency: Urgency;
+  numPeople: number;
+  urgencyLevel: Urgency;
   status: RequestStatus;
+  coordinatorId?: number;
+  imageUrls: string[];
+  statusHistories: StatusHistory[];
+  verifiedAt?: string;
+  completedAt?: string;
+  confirmedAt?: string;
   createdAt: string;
-  customerName: string;
-  customerPhone: string;
+}
+
+export interface StatusHistory {
+  fromStatus?: RequestStatus;
+  toStatus: RequestStatus;
+  changedBy: number;
+  note?: string;
+  changedAt: string;
 }
 
 export interface Team {

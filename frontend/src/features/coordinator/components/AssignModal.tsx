@@ -21,7 +21,7 @@ interface AssignModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   request: Request | null;
-  onAssign: (requestId: string, teamId: string, vehicleId: string) => Promise<void>;
+  onAssign: (requestId: number, teamId: string, vehicleId: string) => Promise<void>;
 }
 
 export function AssignModal({ open, onOpenChange, request, onAssign }: AssignModalProps) {
@@ -87,10 +87,10 @@ export function AssignModal({ open, onOpenChange, request, onAssign }: AssignMod
         <div className="space-y-4 py-4">
           {request && (
             <div className="bg-blue-50 p-3 rounded-lg text-sm">
-              <div className="font-medium">{request.title}</div>
-              <div className="text-gray-600 mt-1">{request.location}</div>
+              <div className="font-medium">{request.description}</div>
+              <div className="text-gray-600 mt-1">{request.addressText || `${request.lat}, ${request.lng}`}</div>
               <div className="text-gray-500 text-xs mt-1">
-                {request.customerName} - {request.customerPhone}
+                Công dân ID: {request.citizenId} - {request.numPeople} người
               </div>
             </div>
           )}
