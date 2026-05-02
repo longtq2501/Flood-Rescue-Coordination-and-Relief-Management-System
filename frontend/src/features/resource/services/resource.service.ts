@@ -9,6 +9,8 @@ export type Vehicle = {
   type: "BOAT" | "TRUCK" | "HELICOPTER" | "AMBULANCE" | "OTHER";
   capacity: number;
   status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
+  lat?: number;
+  lng?: number;
 };
 
 export async function getVehicles() {
@@ -22,5 +24,16 @@ export async function getVehicles() {
   if (!response.success) {
     throw new Error(response.message || "Khong tai duoc danh sach vehicle");
   }
-  return response.data;
+
+  // Add mock locations for demo purposes
+  const vehiclesWithLocations = response.data.content.map((vehicle, index) => ({
+    ...vehicle,
+    lat: 10.75 + (index * 0.015), // Mock locations around Ho Chi Minh City
+    lng: 106.65 + (index * 0.015),
+  }));
+
+  return {
+    ...response.data,
+    content: vehiclesWithLocations,
+  };
 }

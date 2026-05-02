@@ -15,7 +15,18 @@ export async function getTeams() {
   if (!response.success) {
     throw new Error(response.message || "Khong tai duoc danh sach team");
   }
-  return response.data;
+
+  // Add mock locations for demo purposes
+  const teamsWithLocations = response.data.content.map((team, index) => ({
+    ...team,
+    lat: 10.8 + (index * 0.01), // Mock locations around Ho Chi Minh City
+    lng: 106.6 + (index * 0.01),
+  }));
+
+  return {
+    ...response.data,
+    content: teamsWithLocations,
+  };
 }
 
 export async function assignTeam(payload: DispatchAssignmentPayload) {

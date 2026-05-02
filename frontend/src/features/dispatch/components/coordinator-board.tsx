@@ -13,6 +13,10 @@ import {
   verifyRequest,
 } from "@/features/request/services/request.service";
 import { getVehicles } from "@/features/resource/services/resource.service";
+import { RescueMap } from "./rescue-map";
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
+import type { Team } from "@/features/dispatch/types/dispatch.types";
+import type { Vehicle } from "@/features/resource/services/resource.service";
 
 export function CoordinatorBoard() {
   const queryClient = useQueryClient();
@@ -38,18 +42,18 @@ export function CoordinatorBoard() {
   const verifyMutation = useMutation({
     mutationFn: (id: number) => verifyRequest(String(id), "Verified from coordinator board"),
     onSuccess: () => {
-      toast.success("Verify request thanh cong");
+      toast.success("Xác minh yêu cầu thành công");
       queryClient.invalidateQueries({ queryKey: ["coordinator-requests"] });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Verify request that bai");
+      toast.error(error instanceof Error ? error.message : "Xác minh yêu cầu thất bại");
     },
   });
 
   const assignMutation = useMutation({
     mutationFn: () => {
       if (!selectedRequestId || !selectedTeamId || !selectedVehicleId) {
-        throw new Error("Can chon request, team va vehicle");
+        throw new Error("Cần chọn yêu cầu, đội cứu hộ và phương tiện");
       }
       return assignTeam({
         requestId: selectedRequestId,
@@ -59,14 +63,14 @@ export function CoordinatorBoard() {
       });
     },
     onSuccess: () => {
-      toast.success("Assign team thanh cong");
+      toast.success("Phân công đội cứu hộ thành công");
       queryClient.invalidateQueries({ queryKey: ["coordinator-requests"] });
       setSelectedRequestId(null);
       setSelectedTeamId(null);
       setSelectedVehicleId(null);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Assign team that bai");
+      toast.error(error instanceof Error ? error.message : "Phân công đội cứu hộ thất bại");
     },
   });
 
@@ -78,13 +82,13 @@ export function CoordinatorBoard() {
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Request verification queue</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Hàng đợi xác minh yêu cầu</h2>
         <div className="mt-3 space-y-3">
           {requestsQuery.data?.content.map((item) => (
             <article key={item.id} className="rounded-xl border border-slate-200 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-slate-900">Request #{item.id}</p>
+                  <p className="font-semibold text-slate-900">Yêu cầu #{item.id}</p>
                   <p className="text-sm text-slate-600 line-clamp-1">{item.description}</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
@@ -97,13 +101,13 @@ export function CoordinatorBoard() {
                   onClick={() => verifyMutation.mutate(item.id)}
                   className="rounded-lg bg-cyan-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  Verify
+                  Xác minh
                 </button>
                 <button
                   onClick={() => setSelectedRequestId(item.id)}
                   className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700"
                 >
-                  Chon de assign
+                  Chọn để phân công
                 </button>
               </div>
             </article>
@@ -112,15 +116,15 @@ export function CoordinatorBoard() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Assign panel</h2>
-        <p className="mt-1 text-sm text-slate-600">Chi assign request da VERIFIED.</p>
+        <h2 className="text-lg font-semibold text-slate-900">Bảng phân công</h2>
+        <p className="mt-1 text-sm text-slate-600">Chỉ phân công các yêu cầu đã XÁC MINH.</p>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <select
             className="rounded-xl border border-slate-300 px-3 py-2"
             value={selectedRequestId ?? ""}
             onChange={(event) => setSelectedRequestId(Number(event.target.value) || null)}
           >
-            <option value="">Select request</option>
+            <option value="">Chọn yêu cầu</option>
             {verifiedRequests.map((item) => (
               <option key={item.id} value={item.id}>
                 #{item.id} - {item.urgencyLevel}
@@ -133,7 +137,7 @@ export function CoordinatorBoard() {
             value={selectedTeamId ?? ""}
             onChange={(event) => setSelectedTeamId(Number(event.target.value) || null)}
           >
-            <option value="">Select team</option>
+            <option value="">Chọn đội cứu hộ</option>
             {teamsQuery.data?.content.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name} ({item.status})
@@ -146,7 +150,7 @@ export function CoordinatorBoard() {
             value={selectedVehicleId ?? ""}
             onChange={(event) => setSelectedVehicleId(Number(event.target.value) || null)}
           >
-            <option value="">Select vehicle</option>
+            <option value="">Chọn phương tiện</option>
             {vehiclesQuery.data?.content.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.plateNumber} ({item.type})
@@ -160,8 +164,31 @@ export function CoordinatorBoard() {
           disabled={assignMutation.isPending}
           className="mt-3 rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {assignMutation.isPending ? "Dang assign..." : "Assign ngay"}
+          {assignMutation.isPending ? "Đang phân công..." : "Phân công ngay"}
         </button>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h2 className="text-lg font-semibold text-slate-900">Bản đồ cứu trợ</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Theo dõi vị trí yêu cầu cứu trợ, đội cứu hộ và phương tiện.
+        </p>
+        <div className="mt-3 h-96 w-full">
+          <RescueMap
+            requests={requestsQuery.data?.content ?? []}
+            teams={teamsQuery.data?.content ?? []}
+            vehicles={vehiclesQuery.data?.content ?? []}
+            onRequestClick={(request: RescueRequestSummary) => {
+              toast.info(`Yêu cầu #${request.id}: ${request.description}`);
+            }}
+            onTeamClick={(team: Team) => {
+              toast.info(`Đội ${team.name}: ${team.status}`);
+            }}
+            onVehicleClick={(vehicle: Vehicle) => {
+              toast.info(`Phương tiện ${vehicle.plateNumber}: ${vehicle.status}`);
+            }}
+          />
+        </div>
       </section>
     </div>
   );

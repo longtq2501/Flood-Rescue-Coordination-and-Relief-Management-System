@@ -3,8 +3,8 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json* ./
+RUN npm config set fetch-retry-maxtimeout 1200000 && npm ci --no-audit --no-fund --verbose || npm install --no-audit --no-fund --verbose
 
 FROM base AS build
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api

@@ -1,32 +1,66 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, Home, Users, Box, X } from 'lucide-react'
+import { Menu, Bell, Home, Users, Box, X, User, LogOut } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
 
 const nav = [
-  { href: '/dashboard/citizen', label: 'Citizen', icon: Home },
-  { href: '/dashboard/coordinator', label: 'Coordinator', icon: Users },
-  { href: '/dashboard/rescue-team', label: 'Rescue Team', icon: Box },
-  { href: '/dashboard/manager', label: 'Manager', icon: Users },
+  { href: '/dashboard/citizen', label: 'Người dân', icon: Home },
+  { href: '/dashboard/coordinator', label: 'Điều phối viên', icon: Users },
+  { href: '/dashboard/rescue-team', label: 'Đội cứu hộ', icon: Box },
+  { href: '/dashboard/manager', label: 'Quản lý', icon: Users },
 ]
+
+import { useAuthStore } from '@/features/auth/store/auth.store'
+import { useRouter } from 'next/navigation'
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  
+  const clearSession = useAuthStore((state) => state.clearSession)
+  const router = useRouter()
+
+  const handleLogout = () => {
+    clearSession()
+    router.push('/')
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <header className="sticky top-0 z-20 border-b bg-white px-4 py-2 shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+        <div className="flex w-full items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button aria-label="toggle menu" className="md:hidden" onClick={() => setOpen(!open)}>
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <Link href="/" className="text-lg font-bold text-teal-800">Flood Rescue Console</Link>
+            <Link href="/" className="text-lg font-bold text-teal-800">Flood Rescue</Link>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 relative">
             <Button variant="ghost" className="hidden md:inline-flex"><Bell className="h-4 w-4" /></Button>
-            <Button variant="ghost">Profile</Button>
+            
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                className="rounded-full w-10 h-10 p-0"
+                onClick={() => setProfileOpen(!profileOpen)}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+              
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md border bg-white py-1 shadow-lg z-50">
+                  <button 
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -47,8 +81,10 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <main className="flex-1 p-4 md:ml-64">
-          {children}
+        <main className="flex-1 p-6 md:ml-64 flex justify-center pt-10">
+          <div className="w-full max-w-5xl pr-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>
