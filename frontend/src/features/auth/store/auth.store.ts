@@ -18,6 +18,7 @@ type AuthState = {
   hydrated: boolean;
   setSession: (user: AuthUser) => void;
   clearSession: () => void;
+  updateUser: (user: AuthUser) => void;
   setHydrated: (value: boolean) => void;
 };
 
@@ -31,6 +32,10 @@ export const useAuthStore = create<AuthState>()(
         set({
           user,
           role: user.role,
+        }),
+      updateUser: (user) =>
+        set({
+          user,
         }),
       clearSession: () => {
         Cookies.remove(ACCESS_TOKEN_KEY);

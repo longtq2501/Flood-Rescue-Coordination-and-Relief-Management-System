@@ -51,6 +51,15 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
               
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-md border bg-white py-1 shadow-lg z-50">
+                  <Link 
+                    href="/settings/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Hồ sơ cá nhân</span>
+                  </Link>
+                  <hr className="my-1 border-slate-100" />
                   <button 
                     onClick={handleLogout}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-50"

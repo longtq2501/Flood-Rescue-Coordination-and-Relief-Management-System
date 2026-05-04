@@ -1,11 +1,13 @@
 "use client";
 
-import { apiGet, apiPost, clearAuthCookies, setAuthCookies } from "@/shared/api/http";
+import { apiGet, apiPost, apiPut, clearAuthCookies, setAuthCookies } from "@/shared/api/http";
 import type {
   AuthTokens,
   AuthUser,
+  ChangePasswordRequest,
   LoginRequest,
   RegisterRequest,
+  UpdateProfileRequest,
 } from "@/shared/types/api";
 
 export async function login(payload: LoginRequest) {
@@ -42,4 +44,20 @@ export async function logout(refreshToken: string) {
   }
   clearAuthCookies();
   return response;
+}
+
+export async function updateProfile(payload: UpdateProfileRequest) {
+  const response = await apiPut<AuthUser, UpdateProfileRequest>("/auth/me", payload);
+  if (!response.success) {
+    throw new Error(response.message || "Cập nhật hồ sơ thất bại");
+  }
+  return response.data;
+}
+
+export async function changePassword(payload: ChangePasswordRequest) {
+  const response = await apiPut<null, ChangePasswordRequest>("/auth/change-password", payload);
+  if (!response.success) {
+    throw new Error(response.message || "Đổi mật khẩu thất bại");
+  }
+  return response.data;
 }
