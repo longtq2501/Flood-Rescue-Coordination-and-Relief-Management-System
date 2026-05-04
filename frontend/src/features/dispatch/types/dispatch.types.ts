@@ -32,24 +32,8 @@ export type DispatchAssignmentPayload = {
   note?: string;
 };
 
-export type Warehouse = {
-  id: number;
+export type CreateTeamRequest = {
   name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  managerId: number;
-};
-
-export type MapData = {
-  teams: Team[];
-  requests: RescueRequestSummary[];
-  warehouses: Warehouse[];
-};
-
-export type LocationUpdateRequest = {
-  lat: number;
-  lng: number;
-  speed?: number;
-  heading?: number;
+  leaderId: number;
+  capacity: number;
 };

@@ -8,6 +8,7 @@ import type {
   RescueRequestDetail,
   RescueRequestSummary,
   RequestStatus,
+  RequestFilters,
 } from "@/features/request/types/request.types";
 
 export async function createRescueRequest(payload: CreateRescueRequestPayload) {
@@ -92,11 +93,16 @@ export async function confirmRequest(id: string, note?: string) {
   return response.data;
 }
 
-export async function fetchCoordinatorRequests() {
+export async function fetchCoordinatorRequests(filters: RequestFilters = {}) {
   const response = await apiGet<PageResult<RescueRequestSummary>>("/requests", {
     params: {
-      page: 0,
-      size: 20,
+      page: filters.page ?? 0,
+      size: filters.size ?? 20,
+      status: filters.status || undefined,
+      urgencyLevel: filters.urgencyLevel || undefined,
+      fromDate: filters.fromDate || undefined,
+      toDate: filters.toDate || undefined,
+      search: filters.search || undefined,
     },
   });
   if (!response.success) {

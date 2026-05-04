@@ -1,32 +1,15 @@
 "use client";
 
 import { apiGet } from "@/shared/api/http";
+import { DashboardData } from "../types";
 
-type DashboardSummary = {
-  totalRequests: number;
-  completedRequests: number;
-  pendingRequests: number;
-  inProgressRequests: number;
-  completionRate: number;
-  avgResponseMinutes: number;
-  avgCompleteMinutes: number;
-};
-
-export type DashboardData = {
-  summary: DashboardSummary;
-  byUrgency: Record<string, number>;
-  resourceUsage: {
-    vehiclesDeployed: number;
-    totalDistributions: number;
-    activeTeams: number;
-    totalTeams: number;
-  };
-};
-
-export async function getManagerDashboard() {
+export async function getDashboardData() {
   const response = await apiGet<DashboardData>("/reports/dashboard");
   if (!response.success) {
-    throw new Error(response.message || "Khong tai duoc dashboard");
+    throw new Error(response.message || "Không tải được dữ liệu dashboard");
   }
   return response.data;
 }
+
+// Keep for backward compatibility if needed, or redirect to getDashboardData
+export const getManagerDashboard = getDashboardData;

@@ -1,6 +1,6 @@
 "use client";
 
-import { apiGet, apiPatch, apiPost } from "@/shared/api/http";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/http";
 import type { PageResult } from "@/features/request/types/request.types";
 import type {
   Assignment,
@@ -8,8 +8,7 @@ import type {
   LocationUpdateRequest,
   MapData,
   Team,
-  TeamStatus,
-  Warehouse,
+  CreateTeamRequest,
 } from "@/features/dispatch/types/dispatch.types";
 import type { RescueRequestSummary } from "@/features/request/types/request.types";
 
@@ -22,7 +21,7 @@ interface TeamLocationDto {
 }
 
 export async function getTeams() {
-  const response = await apiGet<PageResult<Team>>("/dispatch/teams", {
+  const response = await apiGet<Team[]>("/dispatch/teams", {
     params: { page: 0, size: 50 },
   });
   if (!response.success) {
@@ -30,16 +29,13 @@ export async function getTeams() {
   }
 
   // Add mock locations for demo purposes
-  const teamsWithLocations = response.data.content.map((team: Team, index: number) => ({
+  const teamsWithLocations = response.data.map((team, index) => ({
     ...team,
     lat: 10.8 + (index * 0.01), // Mock locations around Ho Chi Minh City
     lng: 106.6 + (index * 0.01),
   }));
 
-  return {
-    ...response.data,
-    content: teamsWithLocations,
-  };
+  return teamsWithLocations;
 }
 
 export async function assignTeam(payload: DispatchAssignmentPayload) {
@@ -83,41 +79,36 @@ export async function completeAssignment(id: number, resultNote: string) {
   return response.data;
 }
 
-export async function getMapData() {
-  // 1. Fetch data from multiple sources
-  const [teamsRes, requestsRes, warehousesRes] = await Promise.all([
-    apiGet<{ teams: TeamLocationDto[] }>("/dispatch/map"),
-    apiGet<PageResult<RescueRequestSummary>>("/requests", { params: { size: 100 } }),
-    apiGet<Warehouse[]>("/resources/warehouses"),
-  ]);
-
-  // 2. Aggregate and normalize data
-  const mapData: MapData = {
-    teams: (teamsRes.success ? teamsRes.data.teams : []).map((t: TeamLocationDto) => ({
-      id: t.teamId,
-      name: t.teamName,
-      status: t.status as TeamStatus,
-      lat: t.lat,
-      lng: t.lng,
-      capacity: 0,
-      memberCount: 0,
-    })),
-    requests: requestsRes.success ? requestsRes.data.content : [],
-    warehouses: (warehousesRes.success ? warehousesRes.data : []).map((w: Warehouse, index: number) => ({
-      ...w,
-      // Mock locations if backend doesn't have them
-      lat: w.lat || 10.7 + (index * 0.02),
-      lng: w.lng || 106.5 + (index * 0.02),
-    })),
-  };
-
-  return mapData;
+export async function createTeam(data: CreateTeamRequest) {
+  const response = await apiPost<Team, CreateTeamRequest>("/dispatch/teams", data);
+  if (!response.success) {
+    throw new Error(response.message || "Khong the tao doi cuu ho");
+  }
+  return response.data;
 }
 
-export async function updateLocation(payload: LocationUpdateRequest) {
-  const response = await apiPost<void, LocationUpdateRequest>("/dispatch/location", payload);
+export async function updateTeam(id: number, data: CreateTeamRequest) {
+  const response = await apiPatch<Team, CreateTeamRequest>(`/dispatch/teams/${id}`, data);
   if (!response.success) {
-    throw new Error(response.message || "Cap nhat vi tri that bai");
+    throw new Error(response.message || "Khong the cap nhat doi cuu ho");
+  }
+  return response.data;
+}
+
+export async function updateTeamStatus(id: number, status: string) {
+  const response = await apiPatch<Team, undefined>(`/dispatch/teams/${id}/status`, undefined, {
+    params: { status }
+  });
+  if (!response.success) {
+    throw new Error(response.message || "Khong the cap nhat trang thai");
+  }
+  return response.data;
+}
+
+export async function deleteTeam(id: number) {
+  const response = await apiDelete<void>(`/dispatch/teams/${id}`);
+  if (!response.success) {
+    throw new Error(response.message || "Khong the xoa doi cuu ho");
   }
   return response.data;
 }

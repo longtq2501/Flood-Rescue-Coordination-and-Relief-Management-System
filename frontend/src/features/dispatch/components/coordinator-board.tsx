@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Map as MapIcon } from "lucide-react";
@@ -16,29 +17,41 @@ import {
 } from "@/features/request/services/request.service";
 import { getVehicles } from "@/features/resource/services/resource.service";
 import { RescueMap } from "./rescue-map";
-import type { RescueRequestSummary } from "@/features/request/types/request.types";
+import { RequestFilterBar } from "@/features/request/components/request-filter-bar";
+import type { RescueRequestSummary, RequestStatus, UrgencyLevel } from "@/features/request/types/request.types";
 import type { Team } from "@/features/dispatch/types/dispatch.types";
-import type { Vehicle } from "@/features/resource/services/resource.service";
+import type { Vehicle } from "@/features/resource/types/resource.types";
 
 export function CoordinatorBoard() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
 
+  // Extract filters from URL
+  const filters = {
+    status: (searchParams.get("status") as RequestStatus) || undefined,
+    urgencyLevel: (searchParams.get("urgencyLevel") as UrgencyLevel) || undefined,
+    search: searchParams.get("search") || undefined,
+    fromDate: searchParams.get("fromDate") || undefined,
+    toDate: searchParams.get("toDate") || undefined,
+    page: Number(searchParams.get("page")) || 0,
+  };
+
   const requestsQuery = useQuery({
-    queryKey: ["coordinator-requests"],
-    queryFn: fetchCoordinatorRequests,
+    queryKey: ["coordinator-requests", filters],
+    queryFn: () => fetchCoordinatorRequests(filters),
   });
 
-  const teamsQuery = useQuery({
+  const teamsQuery = useQuery<Team[]>({
     queryKey: ["dispatch-teams"],
-    queryFn: getTeams,
+    queryFn: () => getTeams(),
   });
 
-  const vehiclesQuery = useQuery({
+  const vehiclesQuery = useQuery<PageResult<Vehicle>>({
     queryKey: ["resource-vehicles"],
-    queryFn: getVehicles,
+    queryFn: () => getVehicles(),
   });
 
   const verifyMutation = useMutation({
@@ -83,16 +96,7 @@ export function CoordinatorBoard() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Điều phối Cứu trợ</h1>
-        <Link 
-          href="/dashboard/coordinator/map"
-          className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-800 transition-all shadow-md hover:shadow-lg active:scale-95"
-        >
-          <MapIcon className="w-4 h-4" />
-          Xem bản đồ toàn diện
-        </Link>
-      </div>
+      <RequestFilterBar />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <div className="mt-3 space-y-3">
@@ -150,7 +154,7 @@ export function CoordinatorBoard() {
             onChange={(event) => setSelectedTeamId(Number(event.target.value) || null)}
           >
             <option value="">Chọn đội cứu hộ</option>
-            {teamsQuery.data?.content.map((item) => (
+            {teamsQuery.data?.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name} ({item.status})
               </option>
@@ -188,7 +192,7 @@ export function CoordinatorBoard() {
         <div className="mt-3 h-96 w-full">
           <RescueMap
             requests={requestsQuery.data?.content ?? []}
-            teams={teamsQuery.data?.content ?? []}
+            teams={teamsQuery.data ?? []}
             vehicles={vehiclesQuery.data?.content ?? []}
             onRequestClick={(request: RescueRequestSummary) => {
               toast.info(`Yêu cầu #${request.id}: ${request.description}`);
