@@ -27,3 +27,9 @@ export type DispatchAssignmentPayload = {
   vehicleId: number;
   note?: string;
 };
+
+export type CreateTeamRequest = {
+  name: string;
+  leaderId: number;
+  capacity: number;
+};
