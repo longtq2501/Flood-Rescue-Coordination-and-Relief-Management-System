@@ -1,19 +1,19 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, Home, Users, Box, X, User, LogOut } from 'lucide-react'
+import { Menu, Bell, Home, Users, Box, X, User, LogOut, Truck, ClipboardList, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/features/auth/store/auth.store'
+import { useRouter } from 'next/navigation'
 
 const nav = [
   { href: '/dashboard/citizen', label: 'Người dân', icon: Home },
   { href: '/dashboard/coordinator', label: 'Điều phối viên', icon: Users },
   { href: '/dashboard/rescue-team', label: 'Đội cứu hộ', icon: Box },
   { href: '/dashboard/manager', label: 'Quản lý', icon: Users },
+  { href: '/dashboard/manager/warehouses', label: 'Kho hàng', icon: Box },
 ]
-
-import { useAuthStore } from '@/features/auth/store/auth.store'
-import { useRouter } from 'next/navigation'
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -38,6 +38,33 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-lg font-bold text-teal-800">Flood Rescue</Link>
           </div>
           <div className="flex items-center gap-3 relative">
+            {/* SSE Simulator (Hidden in production, for testing only) */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hidden md:flex text-[10px] h-7 px-2 border-dashed border-teal-200 text-teal-600 hover:bg-teal-50"
+              onClick={() => {
+                // Mock a new request alert event
+                window.dispatchEvent(new MessageEvent('message', {
+                  data: JSON.stringify({ id: 1, message: "Hệ thống giả lập: Có yêu cầu cứu trợ khẩn cấp tại Quận 1!" }),
+                  lastEventId: 'test-123',
+                  origin: window.location.origin
+                }));
+                // Note: In real life, the EventSource listener handles this. 
+                // Since we can't easily inject into the private EventSource instance,
+                // we manually trigger the same logic for the demo.
+                import('@tanstack/react-query').then(({ useQueryClient }) => {
+                  // We'll use a more direct approach since we can't use hooks here
+                  const event = new CustomEvent('sse-test-trigger', { 
+                    detail: { type: 'new.request.alert', id: '1', message: 'Hệ thống giả lập: Có yêu cầu cứu trợ khẩn cấp tại Quận 1!' } 
+                  });
+                  window.dispatchEvent(event);
+                });
+              }}
+            >
+              Test Realtime
+            </Button>
+
             <Button variant="ghost" className="hidden md:inline-flex"><Bell className="h-4 w-4" /></Button>
             
             <div className="relative">

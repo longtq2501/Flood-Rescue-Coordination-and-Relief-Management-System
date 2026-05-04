@@ -1,4 +1,4 @@
-# Task 01: Warehouse Management
+# Task 01: git checkout -b feature/warehouse-management
 
 ## Overview
 Implement the UI for managing warehouses where relief supplies are stored. This module is part of the Resource Management section and is primarily used by Managers.

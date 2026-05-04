@@ -1,16 +1,9 @@
 # Build stage
-FROM amazoncorretto:21-alpine AS build
+FROM maven:3.9-amazoncorretto-21 AS build
 WORKDIR /app
-COPY mvnw .
-COPY .mvn .mvn
 COPY pom.xml .
-# Sửa lỗi định dạng file Windows (CRLF) và cấp quyền thực thi
-RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
-
-# Caching dependencies
-RUN ./mvnw dependency:go-offline -B
-COPY src src
-RUN ./mvnw clean package -DskipTests
+COPY src ./src
+RUN mvn clean package -DskipTests
 
 # Run stage
 FROM amazoncorretto:21-alpine
@@ -18,4 +11,5 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

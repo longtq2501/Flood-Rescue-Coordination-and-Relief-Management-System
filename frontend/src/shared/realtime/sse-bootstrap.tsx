@@ -33,11 +33,11 @@ type KnownEvent = (typeof KNOWN_EVENTS)[number];
 
 /** TanStack Query cache keys to invalidate per SSE event */
 const EVENT_QUERY_KEY_MAP: Record<KnownEvent, readonly string[]> = {
-  "request.status.updated": ["requests"],
-  "request.assigned":       ["requests"],
-  "request.completed":      ["requests"],
-  "new.request.alert":      ["requests"],
-  "resource.low.alert":     ["resources"],
+  "request.status.updated": ["requests", "coordinator-requests", "my-requests", "manager-dashboard"],
+  "request.assigned":       ["requests", "coordinator-requests", "my-requests", "dispatch-teams", "resource-vehicles", "manager-dashboard"],
+  "request.completed":      ["requests", "coordinator-requests", "my-requests", "manager-dashboard"],
+  "new.request.alert":      ["requests", "coordinator-requests", "manager-dashboard"],
+  "resource.low.alert":     ["resources", "resource-vehicles", "warehouses", "manager-dashboard"],
   "system.broadcast":       [],
 };
 
@@ -47,7 +47,7 @@ const EVENT_PATH_SEGMENT: Partial<Record<KnownEvent, string>> = {
   "request.assigned":       "requests",
   "request.completed":      "requests",
   "new.request.alert":      "requests",
-  "resource.low.alert":     "resources",
+  "resource.low.alert":     "warehouses", // Map low resource alerts to warehouse dashboard
 };
 
 /** Human-readable toast titles */
@@ -215,27 +215,43 @@ export function SseBootstrap() {
               : undefined,
           });
         });
-
-        // Invalidate relevant queries for real-time updates
-        if (eventType.includes("request")) {
-          queryClientRef.current.invalidateQueries({ queryKey: ["coordinator-requests"] });
-          queryClientRef.current.invalidateQueries({ queryKey: ["my-requests"] });
-        }
-        if (eventType.includes("resource") || eventType.includes("assigned")) {
-          queryClientRef.current.invalidateQueries({ queryKey: ["dispatch-teams"] });
-          queryClientRef.current.invalidateQueries({ queryKey: ["resource-vehicles"] });
-        }
       });
     }
 
-    connect();
+      // ── Test Trigger Listener (For Dev/Manual Testing) ─────
+      const handleTestTrigger = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        const eventType = detail.type as KnownEvent;
+        const payload = { id: detail.id, message: detail.message };
 
-    return () => {
-      unmountedRef.current = true;
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      sourceRef.current?.close();
-      sourceRef.current = null;
-    };
+        // Execute same logic as real SSE
+        const keys = EVENT_QUERY_KEY_MAP[eventType];
+        if (keys.length > 0) {
+          void queryClientRef.current.invalidateQueries({ queryKey: [...keys] });
+        }
+        const segment = EVENT_PATH_SEGMENT[eventType];
+        const detailPath = payload.id && segment ? `${getRoleDashboardBase()}/${segment}/${payload.id}` : undefined;
+
+        toast.message(EVENT_TITLE[eventType], {
+          description: payload.message,
+          action: detailPath ? {
+            label: "Xem chi tiết",
+            onClick: () => routerRef.current.push(detailPath),
+          } : undefined,
+        });
+      };
+      window.addEventListener('sse-test-trigger', handleTestTrigger);
+
+      connect();
+
+      return () => {
+        unmountedRef.current = true;
+        window.removeEventListener('sse-test-trigger', handleTestTrigger);
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        sourceRef.current?.close();
+        sourceRef.current = null;
+      };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run exactly once on mount
 
   return null;

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.floodrescue.dispatch.domain.enums.TeamStatus;
 import com.floodrescue.dispatch.dto.request.AssignTeamRequest;
+import com.floodrescue.dispatch.dto.request.CreateTeamRequest;
 import com.floodrescue.dispatch.dto.request.LocationUpdateRequest;
 import com.floodrescue.dispatch.dto.response.AssignmentResponse;
 import com.floodrescue.dispatch.dto.response.MapDataResponse;
@@ -31,4 +32,12 @@ public interface DispatchService {
     void updateLocation(LocationUpdateRequest request, Long userId);
 
     MapDataResponse getMapData();
+
+    RescueTeamResponse createTeam(CreateTeamRequest request);
+
+    RescueTeamResponse updateTeam(Long id, CreateTeamRequest request);
+
+    RescueTeamResponse updateTeamStatus(Long id, TeamStatus status);
+
+    void deleteTeam(Long id);
 }

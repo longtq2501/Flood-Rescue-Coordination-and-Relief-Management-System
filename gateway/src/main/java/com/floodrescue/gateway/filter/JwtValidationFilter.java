@@ -2,9 +2,8 @@ package com.floodrescue.gateway.filter;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -20,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * Global Gateway filter that:
  * 1. ALWAYS strips client-supplied X-User-Id / X-User-Role headers (prevent forge)
@@ -27,12 +27,11 @@ import java.util.List;
  * 3. Validates JWT for all other requests
  * 4. Forwards X-User-Id and X-User-Role headers to downstream services
  */
-@Slf4j
 @Component
 @ConfigurationProperties(prefix = "app")
-@Getter
-@Setter
 public class JwtValidationFilter implements GlobalFilter, Ordered {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtValidationFilter.class);
 
     private static final String HEADER_USER_ID   = "X-User-Id";
     private static final String HEADER_USER_ROLE = "X-User-Role";
@@ -42,11 +41,35 @@ public class JwtValidationFilter implements GlobalFilter, Ordered {
     
     private List<String> publicPaths = new ArrayList<>();
 
-    @Getter
-    @Setter
+    public JwtProperties getJwt() {
+        return jwt;
+    }
+
+    public void setJwt(JwtProperties jwt) {
+        this.jwt = jwt;
+    }
+
+    public List<String> getPublicPaths() {
+        return publicPaths;
+    }
+
+    public void setPublicPaths(List<String> publicPaths) {
+        this.publicPaths = publicPaths;
+    }
+
     public static class JwtProperties {
         private String secret;
+
+        public String getSecret() {
+            return secret;
+        }
+
+        public void setSecret(String secret) {
+            this.secret = secret;
+        }
     }
+
+
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

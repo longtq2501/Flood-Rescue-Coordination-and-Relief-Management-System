@@ -149,4 +149,9 @@ export async function apiPatch<T, B>(
   return response.data;
 }
 
+export async function apiDelete<T>(url: string, config?: AxiosRequestConfig) {
+  const response = await http.delete<ApiResponse<T>>(url, config);
+  return response.data;
+}
+
 export { clearAuthCookies, setAuthCookies, http };
