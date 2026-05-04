@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.floodrescue.dispatch.domain.enums.TeamStatus;
 import com.floodrescue.dispatch.dto.request.AssignTeamRequest;
+import com.floodrescue.dispatch.dto.request.CreateTeamRequest;
 import com.floodrescue.dispatch.dto.request.LocationUpdateRequest;
 import com.floodrescue.dispatch.dto.response.AssignmentResponse;
 import com.floodrescue.dispatch.dto.response.MapDataResponse;
@@ -108,5 +110,37 @@ public class DispatchController {
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<String>> health() {
         return ResponseEntity.ok(ApiResponse.success("Dispatch Service is UP", "OK"));
+    }
+
+    @PostMapping("/teams")
+    public ResponseEntity<ApiResponse<RescueTeamResponse>> createTeam(
+            @Valid @RequestBody CreateTeamRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.success(dispatchService.createTeam(request), "Tạo đội cứu hộ thành công"));
+    }
+
+    @PatchMapping("/teams/{id}")
+    public ResponseEntity<ApiResponse<RescueTeamResponse>> updateTeam(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateTeamRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.success(dispatchService.updateTeam(id, request), "Cập nhật đội cứu hộ thành công"));
+    }
+
+    @PatchMapping("/teams/{id}/status")
+    public ResponseEntity<ApiResponse<RescueTeamResponse>> updateTeamStatus(
+            @PathVariable Long id,
+            @RequestParam TeamStatus status) {
+        return ResponseEntity.ok(
+                ApiResponse.success(dispatchService.updateTeamStatus(id, status), "Cập nhật trạng thái thành công"));
+    }
+
+    @DeleteMapping("/teams/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteTeam(@PathVariable Long id) {
+        dispatchService.deleteTeam(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Xóa đội cứu hộ thành công")
+                .build());
     }
 }

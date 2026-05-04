@@ -16,7 +16,7 @@ import { getVehicles } from "@/features/resource/services/resource.service";
 import { RescueMap } from "./rescue-map";
 import type { RescueRequestSummary } from "@/features/request/types/request.types";
 import type { Team } from "@/features/dispatch/types/dispatch.types";
-import type { Vehicle } from "@/features/resource/services/resource.service";
+import type { Vehicle } from "@/features/resource/types/resource.types";
 
 export function CoordinatorBoard() {
   const queryClient = useQueryClient();
@@ -26,17 +26,17 @@ export function CoordinatorBoard() {
 
   const requestsQuery = useQuery({
     queryKey: ["coordinator-requests"],
-    queryFn: fetchCoordinatorRequests,
+    queryFn: () => fetchCoordinatorRequests(),
   });
 
-  const teamsQuery = useQuery({
+  const teamsQuery = useQuery<Team[]>({
     queryKey: ["dispatch-teams"],
-    queryFn: getTeams,
+    queryFn: () => getTeams(),
   });
 
-  const vehiclesQuery = useQuery({
+  const vehiclesQuery = useQuery<Vehicle[]>({
     queryKey: ["resource-vehicles"],
-    queryFn: getVehicles,
+    queryFn: () => getVehicles(),
   });
 
   const verifyMutation = useMutation({
@@ -138,7 +138,7 @@ export function CoordinatorBoard() {
             onChange={(event) => setSelectedTeamId(Number(event.target.value) || null)}
           >
             <option value="">Chọn đội cứu hộ</option>
-            {teamsQuery.data?.content.map((item) => (
+            {teamsQuery.data?.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name} ({item.status})
               </option>
@@ -151,7 +151,7 @@ export function CoordinatorBoard() {
             onChange={(event) => setSelectedVehicleId(Number(event.target.value) || null)}
           >
             <option value="">Chọn phương tiện</option>
-            {vehiclesQuery.data?.content.map((item) => (
+            {vehiclesQuery.data?.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.plateNumber} ({item.type})
               </option>
@@ -176,8 +176,8 @@ export function CoordinatorBoard() {
         <div className="mt-3 h-96 w-full">
           <RescueMap
             requests={requestsQuery.data?.content ?? []}
-            teams={teamsQuery.data?.content ?? []}
-            vehicles={vehiclesQuery.data?.content ?? []}
+            teams={teamsQuery.data ?? []}
+            vehicles={vehiclesQuery.data ?? []}
             onRequestClick={(request: RescueRequestSummary) => {
               toast.info(`Yêu cầu #${request.id}: ${request.description}`);
             }}

@@ -22,8 +22,9 @@ export async function getVehicles() {
       size: 50,
     },
   });
+  
   if (!response.success) {
-    throw new Error(response.message || "Khong tai duoc danh sach vehicle");
+    throw new Error(response.message || "Không tải được danh sách phương tiện");
   }
 
   // Default empty page result
@@ -41,8 +42,8 @@ export async function getVehicles() {
   // Add mock locations for demo purposes
   const vehiclesWithLocations = content.map((vehicle, index) => ({
     ...vehicle,
-    lat: 10.75 + (index * 0.015), // Mock locations around Ho Chi Minh City
-    lng: 106.65 + (index * 0.015),
+    currentLat: vehicle.currentLat || 10.75 + (index * 0.015),
+    currentLng: vehicle.currentLng || 106.65 + (index * 0.015),
   }));
 
   return {

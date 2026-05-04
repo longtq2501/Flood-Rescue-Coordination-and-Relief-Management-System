@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import type { RescueRequestSummary } from "@/features/request/types/request.types";
 import type { Team } from "@/features/dispatch/types/dispatch.types";
-import type { Vehicle } from "@/features/resource/services/resource.service";
+import type { Vehicle } from "@/features/resource/types/resource.types";
 
 // Dynamically import the map component to avoid SSR issues
 const Map = dynamic(() => import("./map").then(mod => ({ default: mod.Map })), {

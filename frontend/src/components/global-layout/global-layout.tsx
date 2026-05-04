@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, Home, Users, Box, X, User, LogOut } from 'lucide-react'
+import { Menu, Bell, Home, Users, Box, X, User, LogOut, Truck, ClipboardList, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/store/auth.store'
