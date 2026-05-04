@@ -26,7 +26,7 @@ export async function getVehicles() {
   }
 
   // Add mock locations for demo purposes
-  const vehiclesWithLocations = response.data.content.map((vehicle, index) => ({
+  const vehiclesWithLocations = response.data.content.map((vehicle: Vehicle, index: number) => ({
     ...vehicle,
     lat: 10.75 + (index * 0.015), // Mock locations around Ho Chi Minh City
     lng: 106.65 + (index * 0.015),

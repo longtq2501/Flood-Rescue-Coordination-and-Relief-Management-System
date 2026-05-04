@@ -1,7 +1,11 @@
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
+
+export type TeamStatus = "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
+
 export type Team = {
   id: number;
   name: string;
-  status: "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
+  status: TeamStatus;
   capacity: number;
   memberCount: number;
   lat?: number;
@@ -26,4 +30,19 @@ export type DispatchAssignmentPayload = {
   teamId: number;
   vehicleId: number;
   note?: string;
+};
+
+export type Warehouse = {
+  id: number;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  managerId: number;
+};
+
+export type MapData = {
+  teams: Team[];
+  requests: RescueRequestSummary[];
+  warehouses: Warehouse[];
 };

@@ -5,8 +5,20 @@ import type { PageResult } from "@/features/request/types/request.types";
 import type {
   Assignment,
   DispatchAssignmentPayload,
+  MapData,
   Team,
+  TeamStatus,
+  Warehouse,
 } from "@/features/dispatch/types/dispatch.types";
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
+
+interface TeamLocationDto {
+  teamId: number;
+  teamName: string;
+  status: TeamStatus;
+  lat: number;
+  lng: number;
+}
 
 export async function getTeams() {
   const response = await apiGet<PageResult<Team>>("/dispatch/teams", {
@@ -17,7 +29,7 @@ export async function getTeams() {
   }
 
   // Add mock locations for demo purposes
-  const teamsWithLocations = response.data.content.map((team, index) => ({
+  const teamsWithLocations = response.data.content.map((team: Team, index: number) => ({
     ...team,
     lat: 10.8 + (index * 0.01), // Mock locations around Ho Chi Minh City
     lng: 106.6 + (index * 0.01),
@@ -70,4 +82,35 @@ export async function completeAssignment(id: number, resultNote: string) {
     throw new Error(response.message || "Khong complete duoc assignment");
   }
   return response.data;
+}
+
+export async function getMapData() {
+  // 1. Fetch data from multiple sources
+  const [teamsRes, requestsRes, warehousesRes] = await Promise.all([
+    apiGet<{ teams: TeamLocationDto[] }>("/dispatch/map"),
+    apiGet<PageResult<RescueRequestSummary>>("/requests", { params: { size: 100 } }),
+    apiGet<Warehouse[]>("/resources/warehouses"),
+  ]);
+
+  // 2. Aggregate and normalize data
+  const mapData: MapData = {
+    teams: (teamsRes.success ? teamsRes.data.teams : []).map((t: TeamLocationDto) => ({
+      id: t.teamId,
+      name: t.teamName,
+      status: t.status as TeamStatus,
+      lat: t.lat,
+      lng: t.lng,
+      capacity: 0,
+      memberCount: 0,
+    })),
+    requests: requestsRes.success ? requestsRes.data.content : [],
+    warehouses: (warehousesRes.success ? warehousesRes.data : []).map((w: Warehouse, index: number) => ({
+      ...w,
+      // Mock locations if backend doesn't have them
+      lat: w.lat || 10.7 + (index * 0.02),
+      lng: w.lng || 106.5 + (index * 0.02),
+    })),
+  };
+
+  return mapData;
 }

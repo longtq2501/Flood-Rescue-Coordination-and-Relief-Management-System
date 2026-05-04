@@ -1,8 +1,10 @@
-"use client";
+ "use client";
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import Link from "next/link";
+import { Map as MapIcon } from "lucide-react";
 
 import {
   assignTeam,
@@ -81,8 +83,18 @@ export function CoordinatorBoard() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Điều phối Cứu trợ</h1>
+        <Link 
+          href="/dashboard/coordinator/map"
+          className="flex items-center gap-2 bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-teal-800 transition-all shadow-md hover:shadow-lg active:scale-95"
+        >
+          <MapIcon className="w-4 h-4" />
+          Xem bản đồ toàn diện
+        </Link>
+      </div>
+
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Hàng đợi xác minh yêu cầu</h2>
         <div className="mt-3 space-y-3">
           {requestsQuery.data?.content.map((item) => (
             <article key={item.id} className="rounded-xl border border-slate-200 p-3">
