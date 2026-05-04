@@ -19,6 +19,7 @@ import com.floodrescue.dispatch.domain.entity.RescueTeam;
 import com.floodrescue.dispatch.domain.enums.AssignmentStatus;
 import com.floodrescue.dispatch.domain.enums.TeamStatus;
 import com.floodrescue.dispatch.dto.request.AssignTeamRequest;
+import com.floodrescue.dispatch.dto.request.CreateTeamRequest;
 import com.floodrescue.dispatch.dto.request.LocationUpdateRequest;
 import com.floodrescue.dispatch.dto.response.AssignmentResponse;
 import com.floodrescue.dispatch.dto.response.MapDataResponse;
@@ -274,6 +275,54 @@ public class DispatchServiceImpl implements DispatchService {
                                 .collect(Collectors.toList());
 
                 return MapDataResponse.builder().teams(dtoList).build();
+        }
+
+        @Override
+        @Transactional
+        public RescueTeamResponse createTeam(CreateTeamRequest request) {
+                RescueTeam team = RescueTeam.builder()
+                                .name(request.getName())
+                                .leaderId(request.getLeaderId())
+                                .capacity(request.getCapacity() != null ? request.getCapacity() : 4)
+                                .status(TeamStatus.AVAILABLE)
+                                .build();
+                team = teamRepository.save(team);
+                return toTeamResponse(team);
+        }
+
+        @Override
+        @Transactional
+        public RescueTeamResponse updateTeam(Long id, CreateTeamRequest request) {
+                RescueTeam team = teamRepository.findById(id)
+                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                team.setName(request.getName());
+                team.setLeaderId(request.getLeaderId());
+                if (request.getCapacity() != null) {
+                        team.setCapacity(request.getCapacity());
+                }
+                team = teamRepository.save(team);
+                return toTeamResponse(team);
+        }
+
+        @Override
+        @Transactional
+        public RescueTeamResponse updateTeamStatus(Long id, TeamStatus status) {
+                RescueTeam team = teamRepository.findById(id)
+                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                team.setStatus(status);
+                team = teamRepository.save(team);
+                return toTeamResponse(team);
+        }
+
+        @Override
+        @Transactional
+        public void deleteTeam(Long id) {
+                RescueTeam team = teamRepository.findById(id)
+                                .orElseThrow(() -> new AppException(ErrorCode.TEAM_NOT_FOUND));
+                if (team.getStatus() != TeamStatus.AVAILABLE) {
+                        throw new AppException(ErrorCode.VALIDATION_ERROR, "Không thể xóa đội đang bận hoặc đang đi cứu hộ");
+                }
+                teamRepository.delete(team);
         }
 
         private RescueTeamResponse toTeamResponse(RescueTeam team) {

@@ -30,6 +30,9 @@ public class NotificationController {
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(
             @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            throw new RuntimeException("Unauthorized SSE connection attempt");
+        }
         return sseService.subscribe(principal.getId(), principal.getRole());
     }
 

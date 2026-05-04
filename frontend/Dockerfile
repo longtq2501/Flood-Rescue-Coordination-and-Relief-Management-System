@@ -1,18 +1,26 @@
-FROM node:20-alpine AS builder
+# Build stage
+FROM node:20-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
+# Run stage
+FROM node:20-slim
 WORKDIR /app
-ENV NODE_ENV production
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-# Removed public copy since directory is missing
-COPY --from=builder /app/next.config.ts ./
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 
 EXPOSE 3000
-CMD ["npm", "start"]
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

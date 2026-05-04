@@ -25,6 +25,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String userRole = request.getHeader("X-User-Role");
         String username = request.getHeader("X-User-Username");
 
+        if (request.getRequestURI().contains("/sse")) {
+            log.debug("SSE request from userId={}, role={}", userId, userRole);
+        }
+
         if (userId != null && userRole != null) {
             UserPrincipal principal = UserPrincipal.builder()
                     .id(Long.valueOf(userId))

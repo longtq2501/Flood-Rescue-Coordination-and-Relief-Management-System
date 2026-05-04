@@ -320,7 +320,7 @@ class RescueRequestServiceImplTest {
                     .imageUrl("rescue-requests/img1.jpg").build();
             request.getImages().add(image);
 
-            when(requestRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(request));
+            when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
             when(minioService.getPresignedUrl("rescue-requests/img1.jpg"))
                     .thenReturn("https://presigned/img1.jpg");
 
@@ -333,7 +333,7 @@ class RescueRequestServiceImplTest {
         @Test
         @DisplayName("should throw REQUEST_NOT_FOUND when request does not exist")
         void notFound_shouldThrow() {
-            when(requestRepository.findByIdWithDetails(99L)).thenReturn(Optional.empty());
+            when(requestRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> rescueRequestService.getById(99L))
                     .isInstanceOf(AppException.class)

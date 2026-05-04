@@ -1,59 +1,57 @@
-export type TeamStatus = 'AVAILABLE' | 'BUSY' | 'RETURNING' | 'OFFLINE';
-export type AssignmentStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
 
-export interface RescueTeamResponse {
-    id: number;
-    name: string;
-    leaderId: number;
-    capacity: number;
-    status: TeamStatus;
-    currentLat?: number;
-    currentLng?: number;
-    createdAt: string;
-    members: TeamMemberResponse[];
-}
+export type TeamStatus = "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
 
-export interface TeamMemberResponse {
-    userId: number;
-    joinedAt: string;
-}
+export type Team = {
+  id: number;
+  name: string;
+  status: TeamStatus;
+  capacity: number;
+  memberCount: number;
+  lat?: number;
+  lng?: number;
+};
 
-export interface AssignmentResponse {
-    id: number;
-    requestId: number;
+export type Assignment = {
+  id: number;
+  requestId: number;
+  teamId: number;
+  teamName: string;
+  vehicleId: number;
+  vehiclePlate: string;
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  assignedAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+};
+
+export type DispatchAssignmentPayload = {
+  requestId: number;
+  teamId: number;
+  vehicleId: number;
+  note?: string;
+};
+
+export type CreateTeamRequest = {
+  name: string;
+  leaderId: number;
+  capacity: number;
+};
+
+export type MapData = {
+  teams: {
     teamId: number;
     teamName: string;
-    vehicleId: number;
-    coordinatorId: number;
-    status: AssignmentStatus;
-    assignedAt: string;
-    startedAt?: string;
-    completedAt?: string;
-    resultNote?: string;
-}
-
-export interface AssignTeamRequest {
-    requestId: number;
-    teamId: number;
-    vehicleId: number;
-}
-
-export interface LocationUpdateRequest {
+    status: TeamStatus;
     lat: number;
     lng: number;
-    speed?: number;
-    heading?: number;
-}
-
-export interface MapDataResponse {
-    teams: TeamLocationDto[];
-}
-
-export interface TeamLocationDto {
-    teamId: number;
-    teamName: string;
-    status: TeamStatus;
-    lat?: number;
-    lng?: number;
     lastUpdated?: string;
-}
+  }[];
+};
+
+export type LocationUpdateRequest = {
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+};

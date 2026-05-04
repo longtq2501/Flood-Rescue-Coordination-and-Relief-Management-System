@@ -36,6 +36,21 @@ spring:
           uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
           predicates:
             - Path=/api/notifications/**
+          filters:
+            - SetResponseHeader=X-Accel-Buffering, no
+            - SetResponseHeader=Cache-Control, no-cache, no-store, must-revalidate
+            - SetResponseHeader=Pragma, no-cache
+            - SetResponseHeader=Expires, 0
+          metadata:
+            response-timeout: 3600000
+            connect-timeout: 60000
+        - id: image-proxy
+          uri: http://minio:9000
+          predicates:
+            - Path=/api/images/**
+          filters:
+            - RewritePath=/api/images/(?<segment>.*), /rescue-images/${segment}
+            - SetRequestHeader=Host, minio:9000
 
         # Report service
         - id: report-service
@@ -93,17 +108,12 @@ springdoc:
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
-  # Public endpoints that skip JWT validation
   public-paths:
     - /v3/api-docs/**
     - /swagger-ui/**
     - /swagger-ui.html
-    - /api/auth/v3/api-docs
-    - /api/requests/v3/api-docs
-    - /api/dispatch/v3/api-docs
-    - /api/resources/v3/api-docs
-    - /api/notifications/v3/api-docs
-    - /api/reports/v3/api-docs
+    - /api/auth/**
+    - /api/images/**
     - /api/auth/register
     - /api/auth/login
     - /api/auth/refresh
@@ -114,6 +124,17 @@ app:
     - /api/notifications/health
     - /api/reports/health
     - /actuator/health
+    - /api/auth/v3/api-docs
+    - /api/requests/v3/api-docs
+    - /api/dispatch/v3/api-docs
+    - /api/resources/v3/api-docs
+    - /api/notifications/v3/api-docs
+    - /api/reports/v3/api-docs
+
+logging:
+  level:
+    com.floodrescue.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
 
 management:
   endpoints:

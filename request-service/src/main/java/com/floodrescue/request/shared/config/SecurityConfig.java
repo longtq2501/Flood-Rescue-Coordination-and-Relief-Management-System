@@ -44,6 +44,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/requests/*/confirm").hasRole("CITIZEN")
                 .requestMatchers("/api/requests/*/verify").hasRole("COORDINATOR")
                 .requestMatchers("/api/requests/*/cancel").hasAnyRole("CITIZEN", "COORDINATOR")
+                
+                // Detailed view access
+                .requestMatchers(HttpMethod.GET, "/api/requests/*").authenticated()
+                
+                // General board access for staff
+                .requestMatchers(HttpMethod.GET, "/api/requests").hasAnyRole("COORDINATOR", "MANAGER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/requests/**").hasAnyRole("COORDINATOR", "MANAGER", "ADMIN")
 
                 .anyRequest().authenticated()

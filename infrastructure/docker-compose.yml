@@ -1,5 +1,3 @@
-version: '3.9'
-
 include:
   - docker-compose.infra.yml
 
@@ -11,6 +9,15 @@ services:
     container_name: rescue-zipkin
     ports:
       - "9411:9411"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:9411/health" ]
       interval: 10s
@@ -40,7 +47,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 400M
+          memory: 350M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       auth-service: { condition: service_healthy }
       request-service: { condition: service_healthy }
@@ -49,12 +61,13 @@ services:
       notification-service: { condition: service_healthy }
       report-service: { condition: service_healthy }
       redis: { condition: service_healthy }
+      minio: { condition: service_started }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 90s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -66,19 +79,24 @@ services:
       DB_PASSWORD: rescuepassword
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-change-in-production}
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== REQUEST SERVICE ====================
   request-service:
@@ -93,23 +111,28 @@ services:
       RABBITMQ_USER: rescueuser
       RABBITMQ_PASS: rescuepassword
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: rescueaccess
-      MINIO_SECRET_KEY: rescuesecret
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== DISPATCH SERVICE ====================
   dispatch-service:
@@ -126,20 +149,25 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redispassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== RESOURCE SERVICE ====================
   resource-service:
@@ -154,20 +182,25 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -182,20 +215,25 @@ services:
       RABBITMQ_USERNAME: rescueuser
       RABBITMQ_PASSWORD: rescuepassword
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== REPORT SERVICE ====================
   report-service:
@@ -210,24 +248,29 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: rescueuser
       RABBITMQ_PASS: rescuepassword
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans  # thêm dòng này
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       # JVM Optimization Flags
-      JAVA_OPTS: "-Xmx512m -Xms256m -XX:MaxMetaspaceSize=256m -XX:TieredStopAtLevel=1"
+      JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:
       resources:
         limits:
-          memory: 800M
+          memory: 600M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      zipkin: { condition: service_healthy }  # thêm dòng này
+      zipkin: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 300s
 
   # ==================== FRONTEND ====================
   frontend:
@@ -236,6 +279,17 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080  # Points to Gateway
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+      NEXT_PUBLIC_SSE_URL: http://localhost:8080/api/notifications/sse
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - gateway
+
