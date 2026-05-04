@@ -15,6 +15,25 @@ import { DashboardData } from "../types";
 
 const COLORS = ["#0ea5e9", "#10b981", "#f59e0b", "#ef4444"];
 
+function isDashboardData(value: unknown): value is DashboardData {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<DashboardData>;
+
+  return Boolean(
+    candidate.summary &&
+      typeof candidate.summary.totalRequests === "number" &&
+      typeof candidate.summary.completionRate === "number" &&
+      candidate.resourceUsage &&
+      Array.isArray(candidate.volumeTrend) &&
+      Array.isArray(candidate.statusDistribution) &&
+      Array.isArray(candidate.urgencyBreakdown) &&
+      Array.isArray(candidate.recentActivities),
+  );
+}
+
 const MOCK_DATA: DashboardData = {
   summary: {
     totalRequests: 1248,
@@ -69,7 +88,7 @@ export function AnalyticsDashboard() {
   });
 
   // Use mock data if API fails or in development
-  const data = apiData || MOCK_DATA;
+  const data = isDashboardData(apiData) ? apiData : MOCK_DATA;
 
   if (isLoading) {
     return (

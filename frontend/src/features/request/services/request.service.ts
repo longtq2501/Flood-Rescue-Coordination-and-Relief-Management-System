@@ -14,31 +14,28 @@ import type {
 export async function createRescueRequest(payload: CreateRescueRequestPayload) {
   const formData = new FormData();
 
-  if (payload.lat !== undefined) {
-    formData.append("lat", String(payload.lat));
-  }
-  if (payload.lng !== undefined) {
-    formData.append("lng", String(payload.lng));
-  }
-  if (payload.addressText) {
-    formData.append("addressText", payload.addressText);
-  }
+  const { images, ...requestData } = payload;
 
-  formData.append("description", payload.description);
-  formData.append("numPeople", String(payload.numPeople));
-  formData.append("urgencyLevel", payload.urgencyLevel);
+  formData.append(
+    "data",
+    new Blob([JSON.stringify(requestData)], { type: "application/json" }),
+  );
 
-  if (payload.images?.length) {
-    Array.from(payload.images).forEach((file) => {
+  if (images?.length) {
+    Array.from(images).forEach((file) => {
       formData.append("images", file);
     });
   }
 
-  const response = await http.post<ApiResponse<RescueRequestDetail>>("/requests", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
+  const response = await http.post<ApiResponse<RescueRequestDetail>>(
+    "/requests",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     },
-  });
+  );
 
   if (!response.data.success) {
     throw new Error(response.data.message || "Tao request that bai");

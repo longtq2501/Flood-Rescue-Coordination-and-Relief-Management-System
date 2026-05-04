@@ -58,3 +58,40 @@ export interface UpdateStockRequest {
   quantity: number;
   note?: string;
 }
+
+export interface DistributionLineItem {
+  reliefItemId: number;
+  itemName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface CreateDistributionItemRequest {
+  reliefItemId: number;
+  quantity: number;
+}
+
+export interface CreateDistributionRequest {
+  requestId: number;
+  recipientId: number;
+  items: CreateDistributionItemRequest[];
+  note?: string;
+}
+
+export interface Distribution {
+  id: number;
+  requestId: number;
+  recipientId: number;
+  recipientName: string;
+  items: DistributionLineItem[];
+  note?: string;
+  distributedAt: string;
+}
+
+export interface DistributionFilters {
+  requestId?: number;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  size?: number;
+}

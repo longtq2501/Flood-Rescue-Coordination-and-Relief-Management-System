@@ -37,3 +37,21 @@ export type CreateTeamRequest = {
   leaderId: number;
   capacity: number;
 };
+
+export type MapData = {
+  teams: {
+    teamId: number;
+    teamName: string;
+    status: TeamStatus;
+    lat: number;
+    lng: number;
+    lastUpdated?: string;
+  }[];
+};
+
+export type LocationUpdateRequest = {
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+};

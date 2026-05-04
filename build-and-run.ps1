@@ -60,13 +60,13 @@ if (Test-Path "$rootPath\frontend") {
 }
 
 # 3. Docker Compose
-Write-Host "`n[3/3] Starting Docker Containers..." -ForegroundColor Yellow
+Write-Host "`n[3/3] Starting Backend Containers..." -ForegroundColor Yellow
 Set-Location "$rootPath\infrastructure"
-docker-compose up -d --build
+docker-compose up -d --build zipkin gateway auth-service request-service dispatch-service resource-service notification-service report-service
 
 Write-Host "`n====================================================" -ForegroundColor Green
 Write-Host "   Deployment Completed Successfully!              " -ForegroundColor Green
-Write-Host "   Frontend: http://localhost:3000                 " -ForegroundColor Green
+Write-Host "   Frontend: run separately with npm run dev       " -ForegroundColor Green
 Write-Host "   API Gateway: http://localhost:8080              " -ForegroundColor Green
 Write-Host "====================================================" -ForegroundColor Green
 

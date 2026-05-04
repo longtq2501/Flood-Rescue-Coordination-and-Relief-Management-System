@@ -32,21 +32,63 @@ const refreshClient = axios.create({
 let isRefreshing = false;
 let pendingQueue: Array<(token: string | null) => void> = [];
 
+const authCookieOptions = {
+  path: "/",
+  sameSite: "strict" as const,
+};
+
+const authCookiePaths = [
+  "/",
+  "/login",
+  "/register",
+  "/dashboard",
+  "/dashboard/citizen",
+  "/dashboard/coordinator",
+  "/dashboard/rescue-team",
+  "/dashboard/manager",
+  "/dashboard/admin",
+  "/settings",
+  "/settings/profile",
+];
+
 function processQueue(token: string | null) {
   pendingQueue.forEach((resolve) => resolve(token));
   pendingQueue = [];
 }
 
 function setAuthCookies(tokens: AuthTokens) {
-  Cookies.set(ACCESS_TOKEN_KEY, tokens.accessToken, { sameSite: "strict" });
-  Cookies.set(REFRESH_TOKEN_KEY, tokens.refreshToken, { sameSite: "strict" });
-  Cookies.set(USER_ROLE_KEY, tokens.user.role, { sameSite: "strict" });
+  authCookiePaths.forEach((path) => {
+    Cookies.remove(ACCESS_TOKEN_KEY, { path });
+    Cookies.remove(REFRESH_TOKEN_KEY, { path });
+    Cookies.remove(USER_ROLE_KEY, { path });
+  });
+
+  Cookies.set(ACCESS_TOKEN_KEY, tokens.accessToken, authCookieOptions);
+  Cookies.set(REFRESH_TOKEN_KEY, tokens.refreshToken, authCookieOptions);
+  Cookies.set(USER_ROLE_KEY, tokens.user.role, authCookieOptions);
 }
 
 function clearAuthCookies() {
-  Cookies.remove(ACCESS_TOKEN_KEY);
-  Cookies.remove(REFRESH_TOKEN_KEY);
-  Cookies.remove(USER_ROLE_KEY);
+  authCookiePaths.forEach((path) => {
+    Cookies.remove(ACCESS_TOKEN_KEY, { path });
+    Cookies.remove(REFRESH_TOKEN_KEY, { path });
+    Cookies.remove(USER_ROLE_KEY, { path });
+  });
+}
+
+function normalizeAuthCookies() {
+  const accessToken = Cookies.get(ACCESS_TOKEN_KEY);
+  const refreshToken = Cookies.get(REFRESH_TOKEN_KEY);
+  const role = Cookies.get(USER_ROLE_KEY);
+
+  if (!accessToken || !refreshToken || !role) {
+    return;
+  }
+
+  clearAuthCookies();
+  Cookies.set(ACCESS_TOKEN_KEY, accessToken, authCookieOptions);
+  Cookies.set(REFRESH_TOKEN_KEY, refreshToken, authCookieOptions);
+  Cookies.set(USER_ROLE_KEY, role, authCookieOptions);
 }
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -154,4 +196,4 @@ export async function apiDelete<T>(url: string, config?: AxiosRequestConfig) {
   return response.data;
 }
 
-export { clearAuthCookies, setAuthCookies, http };
+export { clearAuthCookies, normalizeAuthCookies, setAuthCookies, http };

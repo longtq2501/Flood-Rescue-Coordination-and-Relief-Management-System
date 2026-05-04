@@ -2,8 +2,13 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { useState } from "react";
-import { SseBootstrap } from "@/shared/realtime/sse-bootstrap";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { normalizeAuthCookies } from "@/shared/api/http";
+const SseBootstrap = dynamic(
+  () => import("@/shared/realtime/sse-bootstrap").then((mod) => mod.SseBootstrap),
+  { ssr: false }
+);
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -17,6 +22,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => {
+    normalizeAuthCookies();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

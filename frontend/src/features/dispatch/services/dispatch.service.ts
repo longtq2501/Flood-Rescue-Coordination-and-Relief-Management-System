@@ -12,13 +12,7 @@ import type {
 } from "@/features/dispatch/types/dispatch.types";
 import type { RescueRequestSummary } from "@/features/request/types/request.types";
 
-interface TeamLocationDto {
-  teamId: number;
-  teamName: string;
-  status: TeamStatus;
-  lat: number;
-  lng: number;
-}
+// Removed duplicate interface TeamLocationDto as it's now in dispatch.types.ts
 
 export async function getTeams() {
   const response = await apiGet<Team[]>("/dispatch/teams", {
@@ -109,6 +103,22 @@ export async function deleteTeam(id: number) {
   const response = await apiDelete<void>(`/dispatch/teams/${id}`);
   if (!response.success) {
     throw new Error(response.message || "Khong the xoa doi cuu ho");
+  }
+  return response.data;
+}
+
+export async function getMapData() {
+  const response = await apiGet<MapData>("/dispatch/map");
+  if (!response.success) {
+    throw new Error(response.message || "Khong the tai du lieu ban do");
+  }
+  return response.data;
+}
+
+export async function updateLocation(data: LocationUpdateRequest) {
+  const response = await apiPost<void, LocationUpdateRequest>("/dispatch/location", data);
+  if (!response.success) {
+    throw new Error(response.message || "Khong the cap nhat vi tri");
   }
   return response.data;
 }

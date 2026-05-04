@@ -9,7 +9,7 @@ export default function CoordinatorDashboardPage() {
   const [activeTab, setActiveTab] = useState<"ops" | "analytics">("ops");
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Bảng điều phối cứu trợ</h1>

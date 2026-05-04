@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { EventSourcePolyfill } from "event-source-polyfill";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
 import { ACCESS_TOKEN_KEY } from "@/shared/constants/auth";
@@ -17,80 +16,95 @@ export function SseBootstrap() {
     const token = Cookies.get(ACCESS_TOKEN_KEY);
     if (!token) return;
 
-    const sseUrl = `${env.apiBaseUrl}/notifications/sse`;
-    
-    const eventSource = new EventSourcePolyfill(sseUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      heartbeatTimeout: 60000,
-    });
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const notification: Notification = JSON.parse(event.data);
-        addNotification(notification);
-        
-        // Show Toast based on type
-        showToast(notification);
-      } catch (error) {
-        console.error("Error parsing SSE data:", error);
-      }
+    const showToast = (notification: Notification) => {
+      const Icon = getIcon(notification.type);
+
+      toast(notification.title, {
+        description: notification.message,
+        icon: <Icon className="h-5 w-5" />,
+        duration: 5000,
+        action: notification.relatedId
+          ? {
+              label: "Xem chi tiết",
+              onClick: () => {
+                window.location.href = getLink(notification);
+              },
+            }
+          : undefined,
+      });
     };
 
-    eventSource.addEventListener("notification", (event: any) => {
-      try {
-        const notification: Notification = JSON.parse(event.data);
-        addNotification(notification);
-        showToast(notification);
-      } catch (error) {
-        console.error("Error parsing notification event:", error);
-      }
-    });
+    const setupSse = () => {
+      if (eventSource) eventSource.close();
 
-    eventSource.onerror = (err) => {
-      console.error("SSE connection error:", err);
-      // EventSourcePolyfill handles reconnection automatically usually
+      const sseUrl = `${env.sseUrl}?token=${token}`;
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const notification: Notification = JSON.parse(event.data);
+          addNotification(notification);
+          showToast(notification);
+        } catch (error) {
+          console.warn("Error parsing SSE data:", error);
+        }
+      };
+
+      eventSource.addEventListener("notification", (event: MessageEvent) => {
+        try {
+          const notification: Notification = JSON.parse(event.data);
+          addNotification(notification);
+          showToast(notification);
+        } catch (error) {
+          console.warn("Error parsing notification event:", error);
+        }
+      });
+
+      eventSource.onerror = (err) => {
+        if (eventSource) eventSource.close();
+
+        // Reconnect after 5 seconds
+        reconnectTimeout = setTimeout(() => {
+          console.warn("SSE: Attempting to reconnect...");
+          setupSse();
+        }, 5000);
+      };
     };
+
+    setupSse();
 
     return () => {
-      eventSource.close();
+      if (eventSource) eventSource.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
   }, [addNotification]);
 
-  const showToast = (notification: Notification) => {
-    const Icon = getIcon(notification.type);
-    
-    toast(notification.title, {
-      description: notification.message,
-      icon: <Icon className="h-5 w-5" />,
-      duration: 5000,
-      action: notification.relatedId ? {
-        label: "Xem chi tiết",
-        onClick: () => {
-          // Navigate to related object
-          window.location.href = getLink(notification);
-        }
-      } : undefined
-    });
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "URGENT_REQUEST": return AlertTriangle;
-      case "MISSION_ASSIGNED": return Bell;
-      case "STATUS_UPDATE": return CheckCircle;
-      default: return Info;
-    }
-  };
-
-  const getLink = (notification: Notification) => {
-    switch (notification.type) {
-      case "URGENT_REQUEST": return `/dashboard/coordinator`;
-      case "MISSION_ASSIGNED": return `/dashboard/rescue-team`;
-      default: return "#";
-    }
-  };
-
   return null; // This is a background listener
 }
+
+const getIcon = (type: string) => {
+  switch (type) {
+    case "URGENT_REQUEST":
+      return AlertTriangle;
+    case "MISSION_ASSIGNED":
+      return Bell;
+    case "STATUS_UPDATE":
+      return CheckCircle;
+    default:
+      return Info;
+  }
+};
+
+const getLink = (notification: Notification) => {
+  switch (notification.type) {
+    case "URGENT_REQUEST":
+      return `/dashboard/coordinator`;
+    case "MISSION_ASSIGNED":
+      return `/dashboard/rescue-team`;
+    default:
+      return "#";
+  }
+};

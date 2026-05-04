@@ -6,6 +6,14 @@ import { getWarehouses } from "@/features/resource/services/resource.service";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye } from "lucide-react";
 
+function formatNumber(n: number) {
+  try {
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+  } catch (e) {
+    return String(n);
+  }
+}
+
 export function WarehouseList() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["warehouses"],
@@ -66,7 +74,7 @@ export function WarehouseList() {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-slate-600">
                     <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      {warehouse.capacity.toLocaleString()} units
+                      {formatNumber(warehouse.capacity)} units
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right">

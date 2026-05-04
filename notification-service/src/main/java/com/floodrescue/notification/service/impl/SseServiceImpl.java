@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SseServiceImpl implements SseService {
+public class SseServiceImpl implements SseService, InitializingBean {
 
     private final ObjectMapper objectMapper;
 
@@ -29,6 +30,30 @@ public class SseServiceImpl implements SseService {
 
     @Value("${app.sse.timeout-ms:1800000}")
     private long sseTimeout;
+
+    private final java.util.concurrent.ScheduledExecutorService heartbeatExecutor = 
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+
+    @Override
+    public void afterPropertiesSet() {
+        heartbeatExecutor.scheduleAtFixedRate(this::sendHeartbeat, 3, 3, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    private void sendHeartbeat() {
+        emitters.forEach((userId, emitter) -> {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("heartbeat")
+                        .data(System.currentTimeMillis()));
+            } catch (IllegalStateException e) {
+                log.debug("Emitter already completed for userId={}", userId);
+                removeEmitter(userId, emitter);
+            } catch (Exception e) {
+                log.warn("Failed to send heartbeat to userId={}, removing emitter", userId);
+                removeEmitter(userId, emitter);
+            }
+        });
+    }
 
     @Override
     public SseEmitter subscribe(Long userId, String role) {

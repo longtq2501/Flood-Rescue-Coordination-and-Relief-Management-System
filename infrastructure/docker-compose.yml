@@ -61,6 +61,7 @@ services:
       notification-service: { condition: service_healthy }
       report-service: { condition: service_healthy }
       redis: { condition: service_healthy }
+      minio: { condition: service_started }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
@@ -110,8 +111,8 @@ services:
       RABBITMQ_USER: rescueuser
       RABBITMQ_PASS: rescuepassword
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: rescueaccess
-      MINIO_SECRET_KEY: rescuesecret
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
       # JVM Optimization Flags
       JAVA_OPTS: "-Xmx384m -Xms128m -XX:MaxMetaspaceSize=192m -XX:TieredStopAtLevel=1"
     deploy:

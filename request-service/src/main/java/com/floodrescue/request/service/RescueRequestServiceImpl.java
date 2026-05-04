@@ -167,9 +167,18 @@ public class RescueRequestServiceImpl implements RescueRequestService {
     @Override
     @Transactional(readOnly = true)
     public RescueRequestResponse getById(Long requestId) {
-        RescueRequest request = requestRepository.findByIdWithDetails(requestId)
+        RescueRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.REQUEST_NOT_FOUND,
                         "Không tìm thấy yêu cầu cứu hộ id=" + requestId));
+
+        // Load collections to avoid LazyInitializationException since OSIV is disabled`
+        if (request.getImages() != null) {
+            request.getImages().size(); // Trigger load
+        }
+        if (request.getStatusHistories() != null) {
+            request.getStatusHistories().size(); // Trigger load
+        }
+
         return toResponse(request);
     }
 
@@ -356,7 +365,22 @@ public class RescueRequestServiceImpl implements RescueRequestService {
         List<String> imageUrls = request.getImages() == null
                 ? List.of()
                 : request.getImages().stream()
-                        .map(img -> minioService.getPresignedUrl(img.getImageUrl()))
+                        .map(img -> {
+                            try {
+                                String url = minioService.getPresignedUrl(img.getImageUrl());
+                                log.debug("Original MinIO URL: {}", url);
+                                
+                                // Proxy through Gateway to avoid CORS and Browser Tracking Prevention
+                                if (url != null && url.contains("minio:9000/rescue-images/")) {
+                                    url = url.replace("http://minio:9000/rescue-images/", "http://localhost:8080/api/images/");
+                                    log.debug("Proxied URL for dev: {}", url);
+                                }
+                                return url;
+                            } catch (Exception e) {
+                                log.error("Failed to get presigned URL for image {}: {}", img.getImageUrl(), e.getMessage());
+                                return img.getImageUrl();
+                            }
+                        })
                         .collect(Collectors.toList());
 
         List<StatusHistoryResponse> histories = request.getStatusHistories() == null

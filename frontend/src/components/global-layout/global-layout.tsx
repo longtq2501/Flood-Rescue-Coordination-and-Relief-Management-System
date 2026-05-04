@@ -1,33 +1,48 @@
 "use client"
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, Home, Users, Box, X, User, LogOut, Truck, ClipboardList, ShieldCheck } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Menu, X, User, LogOut } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/store/auth.store'
-import { useRouter } from 'next/navigation'
-import { SseBootstrap } from '@/shared/realtime/sse-bootstrap'
 import { NotificationBell } from '@/features/notification/components/notification-bell'
-
-const nav = [
-  { href: '/dashboard/citizen', label: 'Người dân', icon: Home },
-  { href: '/dashboard/coordinator', label: 'Điều phối viên', icon: Users },
-  { href: '/dashboard/rescue-team', label: 'Đội cứu hộ', icon: Box },
-  { href: '/dashboard/manager', label: 'Quản lý', icon: Users },
-  { href: '/dashboard/manager/warehouses', label: 'Kho hàng', icon: Box },
-]
+import { DashboardSidebar } from '@/components/global-layout/dashboard-sidebar'
+import { ROLE_TO_DASHBOARD_PATH } from '@/shared/constants/auth'
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   
   const clearSession = useAuthStore((state) => state.clearSession)
+  const role = useAuthStore((state) => state.role)
+  const hydrated = useAuthStore((state) => state.hydrated)
   const router = useRouter()
+  const pathname = usePathname()
 
   const handleLogout = () => {
     clearSession()
     router.push('/')
   }
+
+  useEffect(() => {
+    if (!hydrated || !role) {
+      return;
+    }
+
+    if (!pathname.startsWith('/dashboard')) {
+      return;
+    }
+
+    if (role === 'ADMIN') {
+      return;
+    }
+
+    const expectedPath = ROLE_TO_DASHBOARD_PATH[role];
+    if (!pathname.startsWith(expectedPath)) {
+      router.replace(expectedPath);
+    }
+  }, [hydrated, pathname, role, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -40,12 +55,10 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-lg font-bold text-teal-800">Flood Rescue</Link>
           </div>
           <div className="flex items-center gap-3 relative">
-            <SseBootstrap />
             {/* SSE Simulator (Hidden in production, for testing only) */}
             <Button 
-              variant="outline" 
-              size="sm" 
-              className="hidden md:flex text-[10px] h-7 px-2 border-dashed border-teal-200 text-teal-600 hover:bg-teal-50"
+              variant="ghost" 
+              className="hidden md:flex h-7 border border-dashed border-teal-200 px-2 text-[10px] text-teal-600 hover:bg-teal-50"
               onClick={() => {
                 // Mock a new request alert event
                 const mockNotification = {
@@ -103,23 +116,12 @@ export function GlobalLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="flex flex-1">
-        <aside className={clsx('fixed inset-y-0 left-0 z-10 w-64 transform overflow-auto bg-white border-r transition-transform duration-200 md:static md:translate-x-0', !open && ' -translate-x-full md:translate-x-0')}>
-          <nav className="p-4">
-            <ul className="space-y-1">
-              {nav.map((item) => (
-                <li key={item.href}>
-                  <Link href={item.href} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-teal-800">
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
+        <div className={clsx('fixed inset-y-0 left-0 z-10 w-72 transform transition-transform duration-200 md:static md:translate-x-0', !open && ' -translate-x-full md:translate-x-0')}>
+          <DashboardSidebar />
+        </div>
 
-        <main className="flex-1 p-6 md:ml-64 flex justify-center pt-10">
-          <div className="w-full max-w-5xl pr-8">
+        <main className="flex-1 p-4 pt-10 md:ml-72 md:p-6 md:pt-10 flex justify-center">
+          <div className="w-full max-w-6xl">
             {children}
           </div>
         </main>

@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class NotificationSecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
@@ -26,12 +26,14 @@ public class SecurityConfig {
         "/api/notifications/swagger-ui/**",
         "/api/notifications/swagger-ui.html",
         "/api/notifications/health",
+        "/api/notifications/sse",
         "/actuator/health"
     };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.disable()) // CORS handled by Gateway only
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth

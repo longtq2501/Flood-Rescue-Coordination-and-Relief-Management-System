@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Box, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+function formatNumber(n: number) {
+  try {
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+  } catch (e) {
+    return String(n);
+  }
+}
+
 interface WarehouseDetailsProps {
   id: number;
 }
@@ -61,7 +69,7 @@ export function WarehouseDetails({ id }: WarehouseDetailsProps) {
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-500">Total Capacity</p>
-                <p className="text-slate-900">{warehouse.capacity.toLocaleString()} units</p>
+                <p className="text-slate-900">{formatNumber(warehouse.capacity)} units</p>
               </div>
             </div>
           </div>

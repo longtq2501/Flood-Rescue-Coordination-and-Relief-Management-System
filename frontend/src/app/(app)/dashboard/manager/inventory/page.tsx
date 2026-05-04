@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getWarehouses } from "@/features/resource/services/resource.service";
-import type { Warehouse } from "@/features/resource/types";
+import type { Warehouse } from "@/features/resource/types/warehouse.types";
 import { InventoryList } from "@/features/resource/components/inventory/InventoryList";
 import { AddItemForm } from "@/features/resource/components/inventory/AddItemForm";
 import { Modal } from "@/components/ui/modal";
@@ -27,8 +27,9 @@ export default function InventoryPage() {
     const fetchWarehouses = async () => {
       try {
         const data = await getWarehouses();
-        setWarehouses(data);
-        if (data.length > 0) setSelectedWarehouseId(data[0].id);
+        const content = data?.content ?? [];
+        setWarehouses(content);
+        if (content.length > 0) setSelectedWarehouseId(content[0].id);
       } catch (error: any) {
         toast.error(error.message || "Không thể tải danh sách kho");
       } finally {
@@ -86,7 +87,7 @@ export default function InventoryPage() {
                     <p className="font-bold text-slate-900 text-sm">{warehouse.name}</p>
                     <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
                       <MapPin className="h-3 w-3" />
-                      <span className="line-clamp-1">{warehouse.address}</span>
+                      <span className="line-clamp-1">{warehouse.location}</span>
                     </div>
                   </div>
                 </div>
@@ -104,7 +105,7 @@ export default function InventoryPage() {
                     <h2 className="text-2xl font-bold">{selectedWarehouse?.name}</h2>
                     <p className="flex items-center gap-1 text-brand-100 text-sm mt-1">
                       <MapPin className="h-4 w-4" />
-                      {selectedWarehouse?.address}
+                      {selectedWarehouse?.location}
                     </p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
@@ -144,8 +145,7 @@ export default function InventoryPage() {
             warehouseId={selectedWarehouseId}
             onSuccess={() => {
               setIsAddItemModalOpen(false);
-              // InventoryList will refresh via its own state
-              window.location.reload(); // Quick fix to refresh data across components
+              window.location.reload();
             }}
             onCancel={() => setIsAddItemModalOpen(false)}
           />

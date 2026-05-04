@@ -6,11 +6,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { X, Loader2, ImagePlus } from "lucide-react";
+import { X, Loader2, ImagePlus, MapPin, Navigation } from "lucide-react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import { createRescueRequest } from "@/features/request/services/request.service";
 import type { CreateRescueRequestPayload } from "@/features/request/types/request.types";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+
+// Dynamic import for the map to avoid SSR issues
+const LocationPickerMap = dynamic(() => import("./location-picker-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-64 w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+      <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+    </div>
+  ),
+});
 
 const optionalNumber = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? undefined : value),
@@ -21,18 +33,18 @@ const baseSchema = z.object({
   lat: optionalNumber,
   lng: optionalNumber,
   addressText: z.string().optional(),
-  description: z.string().min(10, "Mo ta toi thieu 10 ky tu"),
-  numPeople: z.coerce.number().int().min(1),
+  description: z.string().min(10, "Mô tả tối thiểu 10 ký tự"),
+  numPeople: z.coerce.number().int().min(1, "Tối thiểu 1 người"),
   urgencyLevel: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
   images: z.custom<File[] | null>().optional()
-    .refine((files) => !files || files.length <= 5, "Toi da 5 hinh anh")
+    .refine((files) => !files || files.length <= 5, "Tối đa 5 hình ảnh")
     .refine(
       (files) => !files || files.every((file) => file.size <= 5 * 1024 * 1024),
-      "Kich thuoc moi anh toi da 5MB"
+      "Kích thước mỗi ảnh tối đa 5MB"
     )
     .refine(
       (files) => !files || files.every((file) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)),
-      "Dinh dang khong ho tro. Chi nhan JPEG, PNG, WEBP."
+      "Định dạng không hỗ trợ. Chỉ nhận JPEG, PNG, WEBP."
     ),
 });
 
@@ -40,17 +52,19 @@ const schema = baseSchema.refine((value) => {
   const hasGps = value.lat !== undefined && value.lng !== undefined;
   const hasAddress = Boolean(value.addressText?.trim());
   return hasGps || hasAddress;
-}, { message: "Can co GPS hoac dia chi thu cong", path: ["addressText"] });
-
+}, { message: "Cần có GPS hoặc địa chỉ thủ công", path: ["addressText"] });
 
 export function CreateRequestForm() {
   const queryClient = useQueryClient();
+  const role = useAuthStore((state) => state.role);
+  const hydrated = useAuthStore((state) => state.hydrated);
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<CreateRescueRequestPayload>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -66,6 +80,15 @@ export function CreateRequestForm() {
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [locationMessage, setLocationMessage] = useState<{ type: "idle" | "pending" | "success" | "error"; text: string }>({
+    type: "idle",
+    text: "",
+  });
+  const watchLat = watch("lat");
+  const watchLng = watch("lng");
+  const isCitizen = hydrated ? role === "CITIZEN" || !role : true;
+  const showRoleHint = hydrated && isCitizen;
+  const showUrgencySelect = hydrated && !isCitizen;
 
   useEffect(() => {
     const urls = selectedFiles.map(file => URL.createObjectURL(file));
@@ -75,6 +98,55 @@ export function CreateRequestForm() {
     };
   }, [selectedFiles]);
 
+  const fetchAddress = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      if (data.display_name) {
+        setValue("addressText", data.display_name, { shouldValidate: true });
+      }
+    } catch (error) {
+      console.warn("Không thể lấy địa chỉ tự động:", error);
+    }
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationMessage({
+        type: "error",
+        text: "Trình duyệt không hỗ trợ định vị. Hãy nhập vị trí thủ công.",
+      });
+      return;
+    }
+
+    setLocationMessage({
+      type: "pending",
+      text: "Đang lấy vị trí hiện tại...",
+    });
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setValue("lat", latitude);
+        setValue("lng", longitude);
+        fetchAddress(latitude, longitude);
+        setLocationMessage({
+          type: "success",
+          text: "Đã lấy vị trí hiện tại.",
+        });
+        toast.success("Đã lấy vị trí hiện tại");
+      },
+      (err) => {
+        setLocationMessage({
+          type: "error",
+          text: err.message === "User denied Geolocation"
+            ? "Bạn đã từ chối cấp quyền vị trí. Hãy nhập địa chỉ hoặc ghim trên bản đồ."
+            : `Không thể lấy vị trí: ${err.message}`,
+        });
+      }
+    );
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
@@ -82,7 +154,7 @@ export function CreateRequestForm() {
       setSelectedFiles(combined);
       setValue("images", combined, { shouldValidate: true });
     }
-    e.target.value = ""; // Reset to allow selecting the same file again if removed
+    e.target.value = "";
   };
 
   const removeFile = (index: number) => {
@@ -94,125 +166,197 @@ export function CreateRequestForm() {
   const mutation = useMutation({
     mutationFn: createRescueRequest,
     onSuccess: () => {
-      toast.success("Da gui yeu cau cuu ho");
+      toast.success("Đã gửi yêu cầu cứu hộ");
       queryClient.invalidateQueries({ queryKey: ["my-requests"] });
       setSelectedFiles([]);
       setPreviewUrls([]);
       reset();
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Gui yeu cau that bai");
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || "Gửi yêu cầu thất bại";
+      toast.error(errorMessage);
     },
   });
 
   return (
     <form
       onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      className="rounded-2xl border border-slate-200 bg-white p-4"
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <h2 className="text-lg font-semibold text-slate-900">Tao yeu cau cuu ho</h2>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <input
-            {...register("lat")}
-            step="any"
-            type="number"
-            placeholder="Latitude"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
-          />
-          {errors.lat && (
-            <p className="text-xs text-red-500">{errors.lat.message}</p>
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-900">Tạo yêu cầu cứu hộ</h2>
+        <p className="text-sm text-slate-500">Vui lòng cung cấp vị trí và thông tin tình trạng để chúng tôi hỗ trợ kịp thời.</p>
+      </div>
+
+      <div className="grid gap-6">
+        {/* Location Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <MapPin className="h-4 w-4 text-teal-600" />
+              Vị trí của bạn
+            </label>
+            <button
+              type="button"
+              onClick={handleGetLocation}
+              className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-700"
+            >
+              <Navigation className="h-3 w-3" />
+              Sử dụng vị trí hiện tại
+            </button>
+          </div>
+
+          {locationMessage.type !== "idle" && (
+            <p
+              className={
+                locationMessage.type === "error"
+                  ? "text-xs font-medium text-rose-600"
+                  : locationMessage.type === "success"
+                    ? "text-xs font-medium text-emerald-600"
+                    : "text-xs font-medium text-slate-500"
+              }
+            >
+              {locationMessage.text}
+            </p>
           )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <input
-            {...register("lng")}
-            step="any"
-            type="number"
-            placeholder="Longitude"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
+
+          <LocationPickerMap
+            lat={watchLat}
+            lng={watchLng}
+            onChange={(lat, lng) => {
+              setValue("lat", lat);
+              setValue("lng", lng);
+              fetchAddress(lat, lng);
+              setLocationMessage({
+                type: "success",
+                text: "Đã ghim vị trí trên bản đồ.",
+              });
+            }}
           />
-          {errors.lng && (
-            <p className="text-xs text-red-500">{errors.lng.message}</p>
-          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-slate-500">Kinh độ (Latitude)</span>
+              <input
+                {...register("lat")}
+                step="any"
+                type="number"
+                placeholder="Ví dụ: 10.762"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-600 focus:bg-white transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-slate-500">Vĩ độ (Longitude)</span>
+              <input
+                {...register("lng")}
+                step="any"
+                type="number"
+                placeholder="Ví dụ: 106.660"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-600 focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-500">Địa chỉ chi tiết (nếu có)</label>
+            <input
+              {...register("addressText")}
+              placeholder="Số nhà, tên đường, phường/xã..."
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-600 focus:bg-white transition-all"
+            />
+            {errors.addressText && (
+              <p className="text-xs text-red-500">{errors.addressText.message}</p>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-1 md:col-span-2">
-          <input
-            {...register("addressText")}
-            placeholder="Dia chi thu cong"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
-          />
-          {errors.addressText && (
-            <p className="text-xs text-red-500">{errors.addressText.message}</p>
+
+        {/* Details Section */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-sm font-semibold text-slate-700">Tình trạng khẩn cấp</label>
+            <textarea
+              {...register("description")}
+              placeholder="Hãy mô tả chi tiết tình hình hiện tại (số người mắc kẹt, tình trạng sức khỏe, mực nước...)"
+              className="min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-600 focus:bg-white transition-all"
+            />
+            {errors.description && (
+              <p className="text-xs text-red-500">{errors.description.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">Số người cần cứu hộ</label>
+            <input
+              {...register("numPeople")}
+              type="number"
+              min={1}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-600 focus:bg-white transition-all"
+            />
+            {errors.numPeople && (
+              <p className="text-xs text-red-500">{errors.numPeople.message}</p>
+            )}
+          </div>
+
+          {showRoleHint ? (
+            <div className="space-y-1.5 rounded-xl border border-teal-100 bg-teal-50/70 px-4 py-3 text-sm text-teal-800 md:col-span-1">
+              <p className="font-semibold">Mức độ ưu tiên do hệ thống xử lý</p>
+              <p className="text-xs leading-5 text-teal-700/90">
+                Với tài khoản citizen, mức độ ưu tiên sẽ được điều phối viên đánh giá từ nội dung và vị trí bạn cung cấp.
+              </p>
+            </div>
+          ) : showUrgencySelect ? (
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Mức độ ưu tiên</label>
+              <select
+                {...register("urgencyLevel")}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition-all focus:border-teal-600 focus:bg-white"
+              >
+                <option value="CRITICAL">NGUY CẤP (Đe dọa tính mạng)</option>
+                <option value="HIGH">CAO (Cần cứu hộ gấp)</option>
+                <option value="MEDIUM">TRUNG BÌNH (Mắc kẹt, an toàn)</option>
+                <option value="LOW">THẤP (Cần hỗ trợ nhu yếu phẩm)</option>
+              </select>
+              {errors.urgencyLevel && (
+                <p className="text-xs text-red-500">{errors.urgencyLevel.message}</p>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 md:col-span-1">
+              Đang đồng bộ quyền tài khoản...
+            </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-1 md:col-span-2">
-          <textarea
-            {...register("description")}
-            placeholder="Mo ta tinh trang khan cap (toi thieu 10 ky tu)"
-            className="min-h-28 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
-          />
-          {errors.description && (
-            <p className="text-xs text-red-500">{errors.description.message}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <input
-            {...register("numPeople")}
-            type="number"
-            min={1}
-            placeholder="So nguoi"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
-          />
-          {errors.numPeople && (
-            <p className="text-xs text-red-500">{errors.numPeople.message}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <select
-            {...register("urgencyLevel")}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
-          >
-            <option value="CRITICAL">CRITICAL</option>
-            <option value="HIGH">HIGH</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="LOW">LOW</option>
-          </select>
-          {errors.urgencyLevel && (
-            <p className="text-xs text-red-500">{errors.urgencyLevel.message}</p>
-          )}
-        </div>
-        <div className="md:col-span-2">
-          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-            <ImagePlus className="h-4 w-4" />
-            Hinh anh hien truong (Toi da 5 anh, 5MB/anh)
+        {/* Images Section */}
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <ImagePlus className="h-4 w-4 text-teal-600" />
+            Hình ảnh hiện trường
           </label>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             {previewUrls.map((url, i) => (
-              <div key={i} className="relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200">
+              <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
                 <Image 
                   src={url} 
                   alt={`Preview ${i}`} 
-                  width={96}
-                  height={96}
+                  width={80}
+                  height={80}
                   className="h-full w-full object-cover" 
                   unoptimized
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                  className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white hover:bg-black/70 transition-colors"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </div>
             ))}
             {selectedFiles.length < 5 && (
-              <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors">
-                <ImagePlus className="h-6 w-6 text-slate-400" />
-                <span className="mt-1 text-xs text-slate-500">Them anh</span>
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-teal-600 transition-all">
+                <ImagePlus className="h-5 w-5 text-slate-400" />
+                <span className="mt-1 text-[10px] font-medium text-slate-500 text-center px-1">Thêm ảnh</span>
                 <input
                   type="file"
                   multiple
@@ -224,31 +368,27 @@ export function CreateRequestForm() {
             )}
           </div>
           {errors.images && (
-            <p className="mt-1 text-xs text-red-500">{errors.images.message}</p>
+            <p className="text-xs text-red-500">{errors.images.message}</p>
           )}
         </div>
       </div>
 
-      {errors.root || Object.keys(errors).length > 0 ? (
-        <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-          {errors.root?.message || "Vui long kiem tra lai thong tin nhap lieu"}
-        </div>
-      ) : null}
-
-      <button
-        disabled={mutation.isPending}
-        type="submit"
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-teal-800 disabled:opacity-60 md:w-auto"
-      >
-        {mutation.isPending ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Dang gui yeu cau...
-          </>
-        ) : (
-          "Gui yeu cau"
-        )}
-      </button>
+      <div className="mt-8 border-t border-slate-100 pt-6">
+        <button
+          disabled={mutation.isPending}
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 py-3.5 font-bold text-white shadow-lg shadow-teal-700/20 transition-all hover:bg-teal-800 hover:translate-y-[-1px] active:translate-y-[0px] disabled:opacity-60"
+        >
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              ĐANG GỬI YÊU CẦU...
+            </>
+          ) : (
+            "GỬI YÊU CẦU CỨU HỘ"
+          )}
+        </button>
+      </div>
     </form>
   );
 }

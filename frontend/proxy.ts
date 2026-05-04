@@ -40,6 +40,10 @@ export function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
+    if (role === "ADMIN") {
+      return NextResponse.next();
+    }
+
     const expectedPath = ROLE_TO_DASHBOARD_PATH[role];
     if (!pathname.startsWith(expectedPath)) {
       return NextResponse.redirect(new URL(expectedPath, request.url));

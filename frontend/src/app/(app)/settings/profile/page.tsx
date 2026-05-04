@@ -68,7 +68,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-600">
                 <Calendar size={16} className="text-slate-400" />
-                <span>Tham gia: {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : "N/A"}</span>
+                <span>
+                  Tham gia: {user.createdAt ? new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(new Date(user.createdAt)) : "N/A"}
+                </span>
               </div>
             </div>
           </Card>

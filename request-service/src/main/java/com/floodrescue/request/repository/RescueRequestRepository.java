@@ -2,7 +2,6 @@ package com.floodrescue.request.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,11 +36,4 @@ public interface RescueRequestRepository extends JpaRepository<RescueRequest, Lo
 
     boolean existsByCitizenIdAndStatusIn(Long citizenId, List<RequestStatus> statuses);
 
-    @Query("""
-            SELECT DISTINCT r FROM RescueRequest r
-            LEFT JOIN FETCH r.images
-            LEFT JOIN FETCH r.statusHistories
-            WHERE r.id = :id
-            """)
-    Optional<RescueRequest> findByIdWithDetails(@Param("id") Long id);
 }
