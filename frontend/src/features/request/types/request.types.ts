@@ -49,5 +49,5 @@ export type CreateRescueRequestPayload = {
   description: string;
   numPeople: number;
   urgencyLevel: UrgencyLevel;
-  images?: FileList | null;
+  images?: File[] | null;
 };
