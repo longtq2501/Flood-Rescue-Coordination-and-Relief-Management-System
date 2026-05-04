@@ -18,7 +18,7 @@ import {
 import { getVehicles } from "@/features/resource/services/resource.service";
 import { RescueMap } from "./rescue-map";
 import { RequestFilterBar } from "@/features/request/components/request-filter-bar";
-import type { RescueRequestSummary, RequestStatus, UrgencyLevel } from "@/features/request/types/request.types";
+import type { RescueRequestSummary, RequestStatus, UrgencyLevel, PageResult } from "@/features/request/types/request.types";
 import type { Team } from "@/features/dispatch/types/dispatch.types";
 import type { Vehicle } from "@/features/resource/types/resource.types";
 
@@ -70,8 +70,14 @@ export function CoordinatorBoard() {
       if (!selectedRequestId || !selectedTeamId || !selectedVehicleId) {
         throw new Error("Cần chọn yêu cầu, đội cứu hộ và phương tiện");
       }
+      const request = requestsQuery.data?.content.find(r => r.id === selectedRequestId);
+      if (!request) {
+        throw new Error("Không tìm thấy thông tin yêu cầu");
+      }
+
       return assignTeam({
         requestId: selectedRequestId,
+        citizenId: request.citizenId,
         teamId: selectedTeamId,
         vehicleId: selectedVehicleId,
         note: "Demo assign",

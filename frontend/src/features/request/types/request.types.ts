@@ -10,6 +10,7 @@ export type RequestStatus =
 
 export type RescueRequestSummary = {
   id: number;
+  citizenId: number;
   lat: number;
   lng: number;
   addressText?: string | null;

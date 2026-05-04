@@ -274,13 +274,19 @@ services:
 
   # ==================== FRONTEND ====================
   frontend:
-    build: ../frontend
+    build:
+      context: ../frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
+        NEXT_PUBLIC_SSE_URL: http://localhost:8080/api/notifications/sse
+        BACKEND_PROXY_URL: http://gateway:8080
     container_name: rescue-frontend
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8080/api
       NEXT_PUBLIC_SSE_URL: http://localhost:8080/api/notifications/sse
+      BACKEND_PROXY_URL: http://gateway:8080
     deploy:
       resources:
         limits:
