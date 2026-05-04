@@ -1,4 +1,4 @@
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+FROM maven:3.9.6-amazoncorretto-21 AS build
 WORKDIR /app
 COPY pom.xml .
 # Retry wrapper for Maven downloads to avoid transient network failures (3 attempts)
@@ -12,7 +12,7 @@ RUN set -eux; \
 COPY src ./src
 RUN mvn clean package -DskipTests -q -T 1C
 
-FROM eclipse-temurin:21-jre-jammy
+FROM amazoncorretto:21-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8084

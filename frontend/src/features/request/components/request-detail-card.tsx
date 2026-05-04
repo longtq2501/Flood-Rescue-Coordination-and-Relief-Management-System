@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import Image from "next/image";
 
 import {
   cancelRequest,
@@ -75,6 +76,32 @@ export function RequestDetailCard({ id }: { id: string }) {
           <span className="font-semibold">Dia chi:</span> {data.addressText || "Khong co"}
         </p>
       </div>
+
+      {data.imageUrls && data.imageUrls.length > 0 && (
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-900">Hinh anh hien truong:</h3>
+          <div className="flex flex-wrap gap-3">
+            {data.imageUrls.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 transition-transform hover:scale-105"
+              >
+                <Image 
+                  src={url} 
+                  alt={`Hien truong ${i + 1}`} 
+                  width={96}
+                  height={96}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button
