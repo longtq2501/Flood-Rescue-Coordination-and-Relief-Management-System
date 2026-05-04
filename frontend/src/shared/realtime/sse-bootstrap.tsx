@@ -216,6 +216,16 @@ export function SseBootstrap() {
               : undefined,
           });
         });
+
+        // Invalidate relevant queries for real-time updates
+        if (eventType.includes("request")) {
+          queryClient.invalidateQueries({ queryKey: ["coordinator-requests"] });
+          queryClient.invalidateQueries({ queryKey: ["my-requests"] });
+        }
+        if (eventType.includes("resource") || eventType.includes("assigned")) {
+          queryClient.invalidateQueries({ queryKey: ["dispatch-teams"] });
+          queryClient.invalidateQueries({ queryKey: ["resource-vehicles"] });
+        }
       });
     }
 

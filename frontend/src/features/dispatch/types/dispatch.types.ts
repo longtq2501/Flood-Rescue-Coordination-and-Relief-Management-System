@@ -4,6 +4,8 @@ export type Team = {
   status: "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
   capacity: number;
   memberCount: number;
+  lat?: number;
+  lng?: number;
 };
 
 export type Assignment = {
