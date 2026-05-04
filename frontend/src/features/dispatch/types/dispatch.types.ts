@@ -1,7 +1,11 @@
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
+
+export type TeamStatus = "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
+
 export type Team = {
   id: number;
   name: string;
-  status: "AVAILABLE" | "BUSY" | "RETURNING" | "OFFLINE";
+  status: TeamStatus;
   capacity: number;
   memberCount: number;
   lat?: number;

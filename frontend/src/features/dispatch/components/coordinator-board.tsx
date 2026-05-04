@@ -1,9 +1,11 @@
-"use client";
+ "use client";
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
+import { Map as MapIcon } from "lucide-react";
 
 import {
   assignTeam,
@@ -97,7 +99,6 @@ export function CoordinatorBoard() {
       <RequestFilterBar />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Hàng đợi xác minh yêu cầu</h2>
         <div className="mt-3 space-y-3">
           {requestsQuery.data?.content.map((item) => (
             <article key={item.id} className="rounded-xl border border-slate-200 p-3">

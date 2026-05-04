@@ -5,9 +5,20 @@ import type { PageResult } from "@/features/request/types/request.types";
 import type {
   Assignment,
   DispatchAssignmentPayload,
+  LocationUpdateRequest,
+  MapData,
   Team,
   CreateTeamRequest,
 } from "@/features/dispatch/types/dispatch.types";
+import type { RescueRequestSummary } from "@/features/request/types/request.types";
+
+interface TeamLocationDto {
+  teamId: number;
+  teamName: string;
+  status: TeamStatus;
+  lat: number;
+  lng: number;
+}
 
 export async function getTeams() {
   const response = await apiGet<Team[]>("/dispatch/teams", {
@@ -39,11 +50,9 @@ export async function assignTeam(payload: DispatchAssignmentPayload) {
 }
 
 export async function getMyAssignments() {
-  const response = await apiGet<PageResult<Assignment>>("/dispatch/assignments/my", {
-    params: { page: 0, size: 20 },
-  });
+  const response = await apiGet<Assignment[]>("/dispatch/assignments/my");
   if (!response.success) {
-    throw new Error(response.message || "Khong tai duoc assignments");
+    throw new Error(response.message || "Khong tai duoc assignment");
   }
   return response.data;
 }
