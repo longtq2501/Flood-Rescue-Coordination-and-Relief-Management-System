@@ -124,7 +124,6 @@ export function SseBootstrap() {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     unmountedRef.current = false;
 
@@ -217,6 +216,7 @@ export function SseBootstrap() {
           });
         });
       });
+    }
 
       // ── Test Trigger Listener (For Dev/Manual Testing) ─────
       const handleTestTrigger = (e: Event) => {
@@ -242,6 +242,8 @@ export function SseBootstrap() {
       };
       window.addEventListener('sse-test-trigger', handleTestTrigger);
 
+      connect();
+
       return () => {
         unmountedRef.current = true;
         window.removeEventListener('sse-test-trigger', handleTestTrigger);
@@ -249,6 +251,7 @@ export function SseBootstrap() {
         sourceRef.current?.close();
         sourceRef.current = null;
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run exactly once on mount
 
   return null;
