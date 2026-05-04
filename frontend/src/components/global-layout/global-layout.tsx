@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, Bell, Home, Users, Box, X, User, LogOut } from 'lucide-react'
+import { Menu, Bell, Home, Users, Box, X, User, LogOut, Truck } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +10,7 @@ const nav = [
   { href: '/dashboard/coordinator', label: 'Điều phối viên', icon: Users },
   { href: '/dashboard/rescue-team', label: 'Đội cứu hộ', icon: Box },
   { href: '/dashboard/manager', label: 'Quản lý', icon: Users },
+  { href: '/dashboard/manager/vehicles', label: 'Phương tiện', icon: Truck },
 ]
 
 import { useAuthStore } from '@/features/auth/store/auth.store'

@@ -4,9 +4,35 @@
 
 $ErrorActionPreference = "Stop"
 
-# Force use Java 21 from user's path
-$env:JAVA_HOME = "C:\Users\longx\.jdks\ms-21.0.11"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+# Function to check requirements
+function Check-Requirement($cmd, $name) {
+    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+        Write-Host "Error: $name is not installed or not in PATH." -ForegroundColor Red
+        return $false
+    }
+    return $true
+}
+
+# 0. Check for necessary tools
+$ok = $true
+$ok = $ok -and (Check-Requirement "java" "Java")
+$ok = $ok -and (Check-Requirement "npm" "Node.js/NPM")
+$ok = $ok -and (Check-Requirement "docker" "Docker")
+
+if (-not $ok) {
+    Write-Host "`nPlease install the missing requirements and try again." -ForegroundColor Yellow
+    exit 1
+}
+
+# Ensure standard PowerShell path is present (safety for some Windows environments)
+if ($env:Path -notlike "*WindowsPowerShell*") {
+    $env:Path = "C:\Windows\System32\WindowsPowerShell\v1.0;$env:Path"
+}
+
+# Use JAVA_HOME if set, otherwise assume java is in PATH
+if ($env:JAVA_HOME) {
+    $env:Path = "$env:JAVA_HOME\bin;$env:Path"
+}
 
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host "   Flood Rescue System - Local Build & Deploy      " -ForegroundColor Cyan
