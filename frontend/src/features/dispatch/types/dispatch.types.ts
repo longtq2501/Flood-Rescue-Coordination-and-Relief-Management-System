@@ -27,6 +27,7 @@ export type Assignment = {
 
 export type DispatchAssignmentPayload = {
   requestId: number;
+  citizenId: number;
   teamId: number;
   vehicleId: number;
   note?: string;
