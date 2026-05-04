@@ -43,8 +43,9 @@ export function AddVehicleForm({ onSuccess, onCancel }: AddVehicleFormProps) {
       await addVehicle(data);
       toast.success("Thêm phương tiện thành công");
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || "Không thể thêm phương tiện");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Không thể thêm phương tiện";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

@@ -24,7 +24,7 @@ import { Modal } from "@/components/ui/modal";
 import { AddVehicleForm } from "./AddVehicleForm";
 import clsx from "clsx";
 
-const typeIcons: Record<VehicleType, any> = {
+const typeIcons: Record<VehicleType, React.ComponentType<{ className?: string }>> = {
   BOAT: Ship,
   TRUCK: Truck,
   HELICOPTER: Plane,
@@ -42,13 +42,11 @@ export function VehicleList() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await getVehicles({
-        status: filterStatus || undefined,
-        type: filterType || undefined,
-      });
-      setVehicles(data);
-    } catch (error: any) {
-      toast.error(error.message || "Không thể tải danh sách phương tiện");
+      const data = await getVehicles();
+      setVehicles(data.content);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Không thể tải danh sách phương tiện";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -63,8 +61,9 @@ export function VehicleList() {
       await updateVehicleStatus(id, newStatus);
       toast.success("Cập nhật trạng thái thành công");
       fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Không thể cập nhật trạng thái");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Không thể cập nhật trạng thái";
+      toast.error(message);
     }
   };
 
@@ -83,7 +82,7 @@ export function VehicleList() {
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as VehicleStatus)}
             className="px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
           >
             <option value="">Tất cả trạng thái</option>
@@ -95,7 +94,7 @@ export function VehicleList() {
 
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => setFilterType(e.target.value as VehicleType)}
             className="px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
           >
             <option value="">Tất cả loại xe</option>
@@ -159,7 +158,7 @@ export function VehicleList() {
                   <select
                     className="flex-1 text-xs border border-slate-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                     value={vehicle.status}
-                    onChange={(e) => handleStatusChange(vehicle.id, e.target.value as any)}
+                    onChange={(e) => handleStatusChange(vehicle.id, e.target.value as VehicleStatus)}
                   >
                     <option value="AVAILABLE">Sẵn sàng</option>
                     <option value="IN_USE">Đang sử dụng</option>

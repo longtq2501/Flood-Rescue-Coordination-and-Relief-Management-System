@@ -48,8 +48,9 @@ export function AddItemForm({ warehouseId, onSuccess, onCancel }: AddItemFormPro
       await addItem({ ...data, warehouseId });
       toast.success("Thêm hàng hóa vào kho thành công");
       onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || "Không thể thêm hàng hóa");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Không thể thêm hàng hóa";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

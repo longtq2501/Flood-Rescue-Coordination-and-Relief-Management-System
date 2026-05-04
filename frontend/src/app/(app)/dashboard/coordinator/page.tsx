@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { CoordinatorBoard } from "@/features/dispatch/components/coordinator-board";
 import { AnalyticsDashboard } from "@/features/report/components/analytics-dashboard";
 import { Activity, LayoutDashboard } from "lucide-react";
@@ -42,7 +42,11 @@ export default function CoordinatorDashboardPage() {
         </div>
       </div>
 
-      {activeTab === "ops" ? <CoordinatorBoard /> : <AnalyticsDashboard />}
+      {activeTab === "ops" ? (
+        <Suspense fallback={<div className="h-64 animate-pulse bg-slate-50 rounded-2xl border border-slate-100" />}>
+          <CoordinatorBoard />
+        </Suspense>
+      ) : <AnalyticsDashboard />}
     </div>
   );
 }

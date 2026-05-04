@@ -51,3 +51,13 @@ export type CreateRescueRequestPayload = {
   urgencyLevel: UrgencyLevel;
   images?: File[] | null;
 };
+
+export interface RequestFilters {
+  status?: RequestStatus | "";
+  urgencyLevel?: UrgencyLevel | "";
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  size?: number;
+  search?: string;
+}

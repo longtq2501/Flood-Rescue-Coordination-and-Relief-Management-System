@@ -28,10 +28,11 @@ export function InventoryList({ warehouseId }: InventoryListProps) {
     setLoading(true);
     try {
       const data = await getItemsByWarehouse(warehouseId);
-      setItems(data || []);
-    } catch (error: any) {
+      setItems(data?.content || []);
+    } catch (error: unknown) {
       console.error("Fetch inventory error:", error);
-      toast.error(error.message || "Không thể tải danh sách hàng hóa");
+      const message = error instanceof Error ? error.message : "Không thể tải danh sách hàng hóa";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

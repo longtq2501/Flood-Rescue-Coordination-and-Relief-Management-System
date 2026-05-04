@@ -27,12 +27,13 @@ export function UpdateStockModal({ item, open, onClose, onSuccess }: UpdateStock
 
     setIsSubmitting(true);
     try {
-      await updateStock(item.id, adjustment, note);
+      await updateStock(item.id, { quantity: adjustment, note });
       toast.success(`Đã ${adjustment > 0 ? 'nhập' : 'xuất'} ${Math.abs(adjustment)} ${item.unit} ${item.name}`);
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Update stock error:", error);
-      toast.error(error.message || "Không thể cập nhật tồn kho");
+      const message = error instanceof Error ? error.message : "Không thể cập nhật tồn kho";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
