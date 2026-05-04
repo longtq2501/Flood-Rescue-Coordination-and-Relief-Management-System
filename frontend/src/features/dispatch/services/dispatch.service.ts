@@ -5,6 +5,7 @@ import type { PageResult } from "@/features/request/types/request.types";
 import type {
   Assignment,
   DispatchAssignmentPayload,
+  LocationUpdateRequest,
   MapData,
   Team,
   TeamStatus,
@@ -53,11 +54,9 @@ export async function assignTeam(payload: DispatchAssignmentPayload) {
 }
 
 export async function getMyAssignments() {
-  const response = await apiGet<PageResult<Assignment>>("/dispatch/assignments/my", {
-    params: { page: 0, size: 20 },
-  });
+  const response = await apiGet<Assignment[]>("/dispatch/assignments/my");
   if (!response.success) {
-    throw new Error(response.message || "Khong tai duoc assignments");
+    throw new Error(response.message || "Khong tai duoc assignment");
   }
   return response.data;
 }
@@ -113,4 +112,12 @@ export async function getMapData() {
   };
 
   return mapData;
+}
+
+export async function updateLocation(payload: LocationUpdateRequest) {
+  const response = await apiPost<void, LocationUpdateRequest>("/dispatch/location", payload);
+  if (!response.success) {
+    throw new Error(response.message || "Cap nhat vi tri that bai");
+  }
+  return response.data;
 }

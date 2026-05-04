@@ -46,3 +46,10 @@ export type MapData = {
   requests: RescueRequestSummary[];
   warehouses: Warehouse[];
 };
+
+export type LocationUpdateRequest = {
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+};

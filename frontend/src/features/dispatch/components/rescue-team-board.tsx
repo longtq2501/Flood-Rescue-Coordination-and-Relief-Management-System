@@ -8,6 +8,7 @@ import {
   getMyAssignments,
   startAssignment,
 } from "@/features/dispatch/services/dispatch.service";
+import { LocationReporter } from "./location-reporter";
 
 export function RescueTeamBoard() {
   const queryClient = useQueryClient();
@@ -39,11 +40,22 @@ export function RescueTeamBoard() {
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h2 className="text-lg font-semibold text-slate-900">My assignments</h2>
+    <div className="space-y-4">
+      <LocationReporter />
+      
+      <section className="rounded-2xl border border-slate-200 bg-white p-4">
+        <h2 className="text-lg font-semibold text-slate-900">Nhiệm vụ của tôi</h2>
       <div className="mt-3 space-y-3">
-        {assignmentsQuery.data?.content.length ? (
-          assignmentsQuery.data.content.map((item) => (
+        {assignmentsQuery.isError ? (
+          <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+            <p className="text-sm text-slate-600">
+              {assignmentsQuery.error && typeof assignmentsQuery.error === 'object' && 'response' in assignmentsQuery.error 
+                ? (assignmentsQuery.error as { response: { data: { message?: string } } }).response.data.message 
+                : "Tài khoản của bạn chưa được gán vào đội cứu hộ nào."}
+            </p>
+          </div>
+        ) : assignmentsQuery.data?.length ? (
+          assignmentsQuery.data.map((item) => (
             <article key={item.id} className="rounded-xl border border-slate-200 p-3">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-slate-900">Assignment #{item.id}</p>
@@ -74,6 +86,7 @@ export function RescueTeamBoard() {
           <p className="text-sm text-slate-600">Khong co assignment nao.</p>
         )}
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
