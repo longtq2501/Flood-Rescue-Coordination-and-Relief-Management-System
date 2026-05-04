@@ -1,94 +1,105 @@
 "use client";
 
-import { apiGet, apiPost, apiPatch } from "@/shared/api/http";
-import type { 
-  Vehicle, 
-  VehicleStatus, 
-  VehicleType, 
-  CreateVehicleRequest,
-  Warehouse,
-  ReliefItem,
-  CreateReliefItemRequest,
-  UpdateStockRequest
-} from "../types";
+import { apiGet, apiPost } from "@/shared/api/http";
+import type { PageResult } from "@/features/request/types/request.types";
+import type { Warehouse, CreateWarehousePayload } from "../types/warehouse.types";
 
-// Vehicles
-export async function getVehicles(filters?: { status?: VehicleStatus; type?: VehicleType }) {
-  const response = await apiGet<Vehicle[]>("/resources/vehicles", {
-    params: filters,
+export type Vehicle = {
+  id: number;
+  plateNumber: string;
+  type: "BOAT" | "TRUCK" | "HELICOPTER" | "AMBULANCE" | "OTHER";
+  capacity: number;
+  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
+  lat?: number;
+  lng?: number;
+};
+
+export async function getVehicles() {
+  const response = await apiGet<PageResult<Vehicle>>("/resources/vehicles", {
+    params: {
+      status: "AVAILABLE",
+      page: 0,
+      size: 50,
+    },
   });
   
   if (!response.success) {
     throw new Error(response.message || "Không tải được danh sách phương tiện");
   }
 
-  // Add mock locations if currentLat/Lng are missing for demo purposes
-  const vehiclesWithLocations = response.data.map((vehicle, index) => ({
+  // Default empty page result
+  const defaultPage: PageResult<Vehicle> = {
+    content: [],
+    totalElements: 0,
+    totalPages: 0,
+    size: 50,
+    page: 0
+  };
+
+  // Ensure content exists
+  const content = response.data?.content || [];
+
+  // Add mock locations for demo purposes
+  const vehiclesWithLocations = content.map((vehicle, index) => ({
     ...vehicle,
     currentLat: vehicle.currentLat || 10.75 + (index * 0.015),
     currentLng: vehicle.currentLng || 106.65 + (index * 0.015),
   }));
 
-  return vehiclesWithLocations;
+  return {
+    ...(response.data || defaultPage),
+    content: vehiclesWithLocations,
+  };
 }
 
-export async function addVehicle(data: CreateVehicleRequest) {
-  const response = await apiPost<Vehicle, CreateVehicleRequest>("/resources/vehicles", data);
-  
-  if (!response.success) {
-    throw new Error(response.message || "Không thể thêm phương tiện mới");
-  }
-  
-  return response.data;
-}
-
-export async function updateVehicleStatus(id: number, status: VehicleStatus, note?: string) {
-  const response = await apiPatch<Vehicle, any>(`/resources/vehicles/${id}/status`, null, {
-    params: { status, note }
-  });
-  
-  if (!response.success) {
-    throw new Error(response.message || "Không thể cập nhật trạng thái phương tiện");
-  }
-  
-  return response.data;
-}
-
-// Warehouses
 export async function getWarehouses() {
-  const response = await apiGet<Warehouse[]>("/resources/warehouses");
+  const response = await apiGet<PageResult<Warehouse>>("/resources/warehouses", {
+    params: {
+      page: 0,
+      size: 50,
+    },
+  });
   if (!response.success) {
-    throw new Error(response.message || "Không tải được danh sách kho");
+    throw new Error(response.message || "Khong tai duoc danh sach warehouse");
+  }
+
+  // Default empty page result
+  const defaultPage: PageResult<Warehouse> = {
+    content: [],
+    totalElements: 0,
+    totalPages: 0,
+    size: 50,
+    page: 0
+  };
+
+  // Ensure content exists
+  const content = response.data?.content || [];
+  
+  // Add mock locations for demo purposes if they are missing
+  const warehousesWithLocations = content.map((warehouse, index) => ({
+    ...warehouse,
+    lat: warehouse.lat || (10.75 + (index * 0.02)),
+    lng: warehouse.lng || (106.65 + (index * 0.02)),
+  }));
+
+  return {
+    ...(response.data || defaultPage),
+    content: warehousesWithLocations,
+  };
+}
+
+export async function getWarehouseDetails(id: number) {
+  const response = await apiGet<Warehouse>(`/resources/warehouses/${id}`);
+  if (!response.success) {
+    throw new Error(response.message || "Khong tai duoc thong tin warehouse");
   }
   return response.data;
 }
 
-// Inventory
-export async function getItemsByWarehouse(warehouseId: number) {
-  const response = await apiGet<{ content: ReliefItem[] }>("/resources/items", {
-    params: { warehouseId, size: 100 }
-  });
+export async function createWarehouse(data: CreateWarehousePayload) {
+  const response = await apiPost<Warehouse, CreateWarehousePayload>("/resources/warehouses", data);
   if (!response.success) {
-    throw new Error(response.message || "Không tải được danh sách hàng hóa");
-  }
-  return response.data.content;
-}
-
-export async function addItem(data: CreateReliefItemRequest) {
-  const response = await apiPost<ReliefItem, CreateReliefItemRequest>("/resources/items", data);
-  if (!response.success) {
-    throw new Error(response.message || "Không thể thêm hàng hóa mới");
-  }
-  return response.data;
-}
-
-export async function updateStock(id: number, quantity: number, note?: string) {
-  const response = await apiPatch<ReliefItem, UpdateStockRequest>(`/resources/items/${id}/stock`, {
-    quantity,
-    note
-  });
-  if (!response.success) {
-    throw new Error(response.message || "Không thể cập nhật tồn kho");
+    throw new Error(response.message || "Khong the tao warehouse");
   }
   return response.data;
 }
