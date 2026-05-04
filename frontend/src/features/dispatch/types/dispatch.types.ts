@@ -37,3 +37,23 @@ export type CreateTeamRequest = {
   leaderId: number;
   capacity: number;
 };
+
+export type LocationUpdateRequest = {
+  lat: number;
+  lng: number;
+  teamId?: number;
+};
+
+export type Warehouse = {
+  id: number;
+  name: string;
+  location: string;
+  lat: number;
+  lng: number;
+};
+
+export interface MapData {
+  requests: RescueRequestSummary[];
+  teams: Team[];
+  warehouses: Warehouse[];
+}

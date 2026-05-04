@@ -32,7 +32,7 @@ export function WarehouseMarker({ warehouse, onClick }: WarehouseMarkerProps) {
       <Popup className="rounded-xl">
         <div className="p-1">
           <h3 className="font-bold text-slate-900">{warehouse.name}</h3>
-          <p className="text-xs text-slate-600 mt-1">{warehouse.address}</p>
+          <p className="text-xs text-slate-600 mt-1">{warehouse.location}</p>
           <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between items-center">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
               Warehouse

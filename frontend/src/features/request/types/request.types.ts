@@ -18,6 +18,7 @@ export type RescueRequestSummary = {
   urgencyLevel: UrgencyLevel;
   status: RequestStatus;
   createdAt: string;
+  citizenName?: string | null;
 };
 
 export type RescueRequestDetail = RescueRequestSummary & {

@@ -19,3 +19,7 @@ export const ROLE_TO_DASHBOARD_PATH: Record<AppRole, string> = {
   MANAGER: "/dashboard/manager",
   ADMIN: "/dashboard/admin",
 };
+
+export function isAppRole(role: any): role is AppRole {
+  return role && APP_ROLES.includes(role as AppRole);
+}

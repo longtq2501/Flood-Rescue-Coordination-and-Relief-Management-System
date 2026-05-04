@@ -9,6 +9,7 @@ import type {
   MapData,
   Team,
   CreateTeamRequest,
+  TeamStatus,
 } from "@/features/dispatch/types/dispatch.types";
 import type { RescueRequestSummary } from "@/features/request/types/request.types";
 
@@ -109,6 +110,33 @@ export async function deleteTeam(id: number) {
   const response = await apiDelete<void>(`/dispatch/teams/${id}`);
   if (!response.success) {
     throw new Error(response.message || "Khong the xoa doi cuu ho");
+  }
+  return response.data;
+}
+
+export async function getMapData(): Promise<MapData> {
+  const [requestsResponse, teams] = await Promise.all([
+    apiGet<PageResult<RescueRequestSummary>>("/requests/coordinator", {
+      params: { page: 0, size: 100 }
+    }),
+    getTeams()
+  ]);
+
+  if (!requestsResponse.success) {
+    throw new Error(requestsResponse.message || "Khong tai duoc du lieu ban do");
+  }
+
+  return {
+    requests: requestsResponse.data.content || [],
+    teams: teams || [],
+    warehouses: [] // Warehouses are fetched separately in components
+  };
+}
+
+export async function updateLocation(payload: LocationUpdateRequest) {
+  const response = await apiPost<void, LocationUpdateRequest>("/dispatch/location", payload);
+  if (!response.success) {
+    throw new Error(response.message || "Cap nhat vi tri that bai");
   }
   return response.data;
 }
