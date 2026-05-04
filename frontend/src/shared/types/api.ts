@@ -21,8 +21,10 @@ export type AuthUser = {
   fullName: string;
   phone: string;
   email?: string | null;
+  address?: string | null;
   role: AppRole;
   avatarUrl?: string | null;
+  createdAt?: string;
 };
 
 export type LoginRequest = {
@@ -36,6 +38,18 @@ export type RegisterRequest = {
   email?: string;
   password: string;
   role: Extract<AppRole, "CITIZEN" | "RESCUE_TEAM">;
+};
+
+export type UpdateProfileRequest = {
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  address?: string | null;
+};
+
+export type ChangePasswordRequest = {
+  oldPassword: string;
+  newPassword: string;
 };
 
 export type AuthTokens = {
