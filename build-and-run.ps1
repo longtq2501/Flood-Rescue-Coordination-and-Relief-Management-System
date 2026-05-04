@@ -5,8 +5,8 @@
 $ErrorActionPreference = "Stop"
 
 # Force use Java 21 from user's path
-$env:JAVA_HOME = "C:\Users\longx\.jdks\ms-21.0.11"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+# $env:JAVA_HOME = "C:\Users\longx\.jdks\ms-21.0.11"
+# $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host "   Flood Rescue System - Local Build & Deploy      " -ForegroundColor Cyan
