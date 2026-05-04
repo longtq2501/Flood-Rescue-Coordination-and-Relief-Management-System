@@ -3,6 +3,7 @@ package com.floodrescue.request.shared.response;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Map;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,7 @@ public class ApiResponse<T> {
     private String message;
     private T data;
     private String code;
+    private Map<String, String> errors;
     private LocalDateTime timestamp;
 
     public static <T> ApiResponse<T> success(String message, T data) {
@@ -40,6 +42,16 @@ public class ApiResponse<T> {
                 .success(false)
                 .code(code)
                 .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message, Map<String, String> errors) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .code(code)
+                .message(message)
+                .errors(errors)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
