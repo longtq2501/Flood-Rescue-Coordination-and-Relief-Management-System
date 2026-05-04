@@ -4,16 +4,16 @@ import Link from 'next/link'
 import { Menu, Bell, Home, Users, Box, X, User, LogOut } from 'lucide-react'
 import clsx from 'clsx'
 import { Button } from '@/components/ui/button'
+import { useAuthStore } from '@/features/auth/store/auth.store'
+import { useRouter } from 'next/navigation'
 
 const nav = [
   { href: '/dashboard/citizen', label: 'Người dân', icon: Home },
   { href: '/dashboard/coordinator', label: 'Điều phối viên', icon: Users },
   { href: '/dashboard/rescue-team', label: 'Đội cứu hộ', icon: Box },
   { href: '/dashboard/manager', label: 'Quản lý', icon: Users },
+  { href: '/dashboard/manager/warehouses', label: 'Kho hàng', icon: Box },
 ]
-
-import { useAuthStore } from '@/features/auth/store/auth.store'
-import { useRouter } from 'next/navigation'
 
 export function GlobalLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
