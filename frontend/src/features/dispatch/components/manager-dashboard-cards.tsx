@@ -24,7 +24,7 @@ export function ManagerDashboardCards() {
     );
   }
 
-  const { summary, resourceUsage, byUrgency } = dashboardQuery.data;
+  const { summary, resourceUsage, urgencyBreakdown } = dashboardQuery.data;
 
   return (
     <div className="space-y-4">
@@ -47,9 +47,9 @@ export function ManagerDashboardCards() {
         <article className="rounded-2xl border border-slate-200 bg-white p-4">
           <h3 className="font-semibold text-slate-900">By urgency</h3>
           <div className="mt-3 space-y-1 text-sm text-slate-700">
-            {Object.entries(byUrgency).map(([urgency, count]) => (
-              <p key={urgency}>
-                {urgency}: {count}
+            {urgencyBreakdown.map((item) => (
+              <p key={item.level}>
+                {item.level}: {item.count}
               </p>
             ))}
           </div>

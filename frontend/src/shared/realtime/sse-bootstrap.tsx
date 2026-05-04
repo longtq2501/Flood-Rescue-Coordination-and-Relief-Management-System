@@ -124,7 +124,6 @@ export function SseBootstrap() {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     unmountedRef.current = false;
 
@@ -219,12 +218,12 @@ export function SseBootstrap() {
 
         // Invalidate relevant queries for real-time updates
         if (eventType.includes("request")) {
-          queryClient.invalidateQueries({ queryKey: ["coordinator-requests"] });
-          queryClient.invalidateQueries({ queryKey: ["my-requests"] });
+          queryClientRef.current.invalidateQueries({ queryKey: ["coordinator-requests"] });
+          queryClientRef.current.invalidateQueries({ queryKey: ["my-requests"] });
         }
         if (eventType.includes("resource") || eventType.includes("assigned")) {
-          queryClient.invalidateQueries({ queryKey: ["dispatch-teams"] });
-          queryClient.invalidateQueries({ queryKey: ["resource-vehicles"] });
+          queryClientRef.current.invalidateQueries({ queryKey: ["dispatch-teams"] });
+          queryClientRef.current.invalidateQueries({ queryKey: ["resource-vehicles"] });
         }
       });
     }
